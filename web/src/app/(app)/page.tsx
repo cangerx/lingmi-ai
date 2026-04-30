@@ -267,7 +267,7 @@ export default function HomePage() {
           <div className="absolute bottom-[10%] left-[30%] w-[350px] h-[350px] bg-gradient-to-br from-pink-200/20 to-orange-200/10 rounded-full blur-3xl" />
         </div>
 
-        <div className="max-w-3xl mx-auto text-center relative z-10">
+        <div className="max-w-5xl mx-auto text-center relative z-10">
           {/* Title */}
           <h1 className="text-3xl font-bold text-neutral-900 mb-6 tracking-tight">
             和我聊聊，你想要什么设计~
