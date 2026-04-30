@@ -35,8 +35,13 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex items-center justify-center h-14 w-full">
         <Link href="/" className="group">
-          <motion.div whileHover={{ scale: 1.08, rotate: 3 }} whileTap={{ scale: 0.95 }} transition={{ type: "spring", stiffness: 400, damping: 17 }}>
-            <img src="/logo-dark.svg" alt="灵觅" className="h-7 w-auto" />
+          <motion.div
+            whileHover={{ scale: 1.08, rotate: 3 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm"
+          >
+            <span className="text-white font-bold text-sm">灵</span>
           </motion.div>
         </Link>
       </div>
