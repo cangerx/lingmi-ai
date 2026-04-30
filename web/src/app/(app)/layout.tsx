@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Sidebar from "@/components/sidebar";
-import Topbar from "@/components/topbar";
 
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
@@ -18,7 +17,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-[#fafafa]">
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
-        <Topbar />
         <AnimatePresence mode="wait">
           <motion.main
             key={pathname}

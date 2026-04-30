@@ -11,7 +11,10 @@ import {
   FolderOpen,
   Package,
   MoreHorizontal,
+  Settings,
+  User,
 } from "lucide-react";
+import { useAuthStore } from "@/store/auth";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -26,6 +29,7 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuthStore();
 
   const isActive = (href: string) =>
     pathname === href || (href !== "/" && pathname.startsWith(href));
@@ -86,6 +90,33 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Bottom: avatar + settings */}
+      <div className="flex flex-col items-center gap-2 py-3 w-full px-2">
+        <Link href="/settings" className="w-full">
+          <motion.div
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            className="flex flex-col items-center justify-center gap-1 w-full py-2 rounded-xl text-[11px] text-neutral-400 hover:text-neutral-600 transition-colors"
+          >
+            <Settings size={18} strokeWidth={1.5} />
+            <span>设置</span>
+          </motion.div>
+        </Link>
+        <Link href={user ? "/settings" : "/login"}>
+          <motion.div
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-8 h-8 rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center overflow-hidden ring-2 ring-white/60 shadow-sm"
+          >
+            {user?.avatar ? (
+              <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+            ) : (
+              <User size={15} className="text-neutral-400" />
+            )}
+          </motion.div>
+        </Link>
+      </div>
     </aside>
   );
 }
