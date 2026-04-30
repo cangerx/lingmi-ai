@@ -100,21 +100,29 @@ export default function ToolsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#fafafa]">
-      {/* Search */}
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-neutral-100 px-6 py-3">
-        <div className="max-w-5xl mx-auto relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="输入模板关键词或功能名称"
-            className="w-full max-w-md pl-9 pr-4 py-2.5 rounded-xl border border-neutral-200/60 bg-white/60 text-sm outline-none focus:border-neutral-300 focus:bg-white focus:shadow-sm transition-all"
-          />
+    <div className="h-full flex flex-col bg-[#fafafa]">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-neutral-100 bg-white/80 backdrop-blur-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/60 flex items-center justify-center">
+              <GridIcon size={16} className="text-neutral-400" />
+            </div>
+            <h1 className="text-base font-semibold text-neutral-900">工具中心</h1>
+          </div>
+          <div className="relative w-64">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="搜索工具..."
+              className="w-full pl-8 pr-4 py-2 rounded-xl border border-neutral-200/60 bg-white/60 text-sm outline-none focus:border-neutral-300 focus:bg-white focus:shadow-sm transition-all"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-6 space-y-10">
+      <div className="flex-1 overflow-y-auto p-6 space-y-10">
         {/* Recent */}
         <motion.section initial="hidden" animate="visible" variants={stagger}>
           <motion.h2 variants={fadeUp} className="text-sm font-medium text-neutral-400 mb-3">最近使用</motion.h2>
