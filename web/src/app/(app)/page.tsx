@@ -49,7 +49,7 @@ const AGENTS: AgentConfig[] = [
       { label: "英语", options: ["英语", "日语", "德语", "法语", "中文"] },
       { label: "1:1", options: ["1:1", "3:4", "4:3", "16:9", "9:16"] },
     ],
-    placeholder: "可输入商品信息生成需求（如"帮我生成商品套图，商品更点是复古质感。"）",
+    placeholder: "可输入商品信息生成需求（如：帮我生成商品套图，商品更点是复古质感）",
     cards: [
       { title: "亚马逊套图", images: ["/images/ec1.webp"] },
       { title: "白底精修图", images: ["/images/ec2.webp"] },
@@ -70,7 +70,7 @@ const AGENTS: AgentConfig[] = [
       { label: "青年", options: ["青年", "中年", "少年"] },
       { label: "3:4", options: ["3:4", "1:1", "4:3", "9:16"] },
     ],
-    placeholder: "可输入服饰图生成需求（如"帮我生成一个模特穿上这件衣服，展示该景为日常通勤。"）",
+    placeholder: "可输入服饰图生成需求（如：帮我生成一个模特穿上这件衣服，展示场景为日常通勤）",
     cards: [
       { title: "服饰穿戴套图", images: ["/images/cloth1.webp"] },
       { title: "服装改色", images: ["/images/cloth2.webp"] },

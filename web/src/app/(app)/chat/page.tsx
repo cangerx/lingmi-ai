@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
   Send,
@@ -145,6 +146,8 @@ export default function ChatPage() {
       }
     }
 
+    if (!conv) return;
+
     setSending(true);
     setStreaming(true);
     setStreamContent("");
@@ -261,7 +264,12 @@ export default function ChatPage() {
   return (
     <div className="flex h-full">
       {/* Conversation list */}
-      <div className="w-[260px] border-r border-[var(--color-border)] bg-white flex flex-col shrink-0">
+      <motion.div
+        initial={{ x: -15, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.35 }}
+        className="w-[260px] border-r border-neutral-100 bg-white/80 glass flex flex-col shrink-0"
+      >
         <div className="p-3 border-b border-[var(--color-border)]">
           <button
             onClick={createConversation}
@@ -305,16 +313,21 @@ export default function ChatPage() {
             ))
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Chat area */}
       <div className="flex-1 flex flex-col min-w-0">
         {activeConv ? (
           <>
             {/* Chat header */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-[var(--color-border)] bg-white">
+            <motion.div
+              initial={{ y: -8, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="flex items-center justify-between px-6 py-3 border-b border-neutral-100 glass"
+            >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neutral-100 to-neutral-200/60 flex items-center justify-center">
                   <Bot size={16} className="text-neutral-600" />
                 </div>
                 <div>
@@ -326,7 +339,7 @@ export default function ChatPage() {
                   </span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto">
@@ -484,10 +497,20 @@ export default function ChatPage() {
         ) : (
           /* Empty state — new chat with model picker */
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center max-w-md">
-              <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
-                <Bot size={24} className="text-neutral-400" />
-              </div>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
+              className="text-center max-w-md"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
+                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-200/60 flex items-center justify-center mx-auto mb-4 shadow-sm"
+              >
+                <Bot size={26} className="text-neutral-400" />
+              </motion.div>
               <h2 className="text-lg font-semibold text-neutral-900 mb-1">
                 开始新对话
               </h2>
@@ -535,7 +558,7 @@ export default function ChatPage() {
                   </button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         )}
       </div>
