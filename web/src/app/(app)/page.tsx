@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
@@ -228,13 +229,35 @@ function MiniDropdown({ label, options }: { label: string; options: string[] }) 
    HomePage
    ═══════════════════════════════════════════════════════ */
 export default function HomePage() {
+  const router = useRouter();
   const [input, setInput] = useState("");
   const [activeAgent, setActiveAgent] = useState(0);
   const [activeTab, setActiveTab] = useState("热门");
+  const [showFloat, setShowFloat] = useState(false);
+  const [floatInput, setFloatInput] = useState("");
+  const chatRef = useRef<HTMLDivElement>(null);
   const agent = AGENTS[activeAgent];
 
+  const handleSend = useCallback((text: string) => {
+    if (!text.trim()) return;
+    router.push(`/chat?q=${encodeURIComponent(text.trim())}`);
+  }, [router]);
+
+  useEffect(() => {
+    const container = document.querySelector('[data-scroll-root]');
+    if (!container) return;
+    const onScroll = () => {
+      if (chatRef.current) {
+        const rect = chatRef.current.getBoundingClientRect();
+        setShowFloat(rect.bottom < 0);
+      }
+    };
+    container.addEventListener('scroll', onScroll, { passive: true });
+    return () => container.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#fafafa] relative">
+    <div data-scroll-root className="flex-1 flex flex-col h-full overflow-y-auto bg-[#fafafa] relative">
       {/* ═══════ FIRST SCREEN ═══════ */}
       <section className="pt-10 pb-8 px-6 relative overflow-hidden">
         {/* Background gradient orbs */}
@@ -285,6 +308,7 @@ export default function HomePage() {
 
           {/* Chat input area */}
           <motion.div
+            ref={chatRef}
             variants={scaleUp}
             className="rounded-2xl overflow-hidden shadow-lg shadow-neutral-200/40 bg-white border border-neutral-200/60 text-left"
           >
@@ -292,6 +316,7 @@ export default function HomePage() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(input); } }}
               placeholder="和我聊聊，你想要什么设计。"
               rows={4}
               className="w-full resize-none px-5 pt-4 pb-2 text-sm outline-none bg-transparent placeholder:text-neutral-400"
@@ -308,9 +333,15 @@ export default function HomePage() {
                 <button className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-50 transition-colors"><MapPin size={16} /></button>
               </div>
               <motion.button
+                onClick={() => handleSend(input)}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium text-white shadow-md transition-all bg-[#F75A60] hover:bg-[#e5484e]"
+                className={cn(
+                  "flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium text-white shadow-md transition-all",
+                  input.trim()
+                    ? "bg-[#F75A60] hover:bg-[#e5484e] cursor-pointer"
+                    : "bg-neutral-300 cursor-not-allowed"
+                )}
               >
                 <Send size={14} /> 发送
               </motion.button>
@@ -488,6 +519,46 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ═══════ FLOATING CHAT BUBBLE ═══════ */}
+      <AnimatePresence>
+        {showFloat && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] as const }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[480px] max-w-[calc(100vw-120px)]"
+          >
+            <div className="bg-white rounded-2xl shadow-2xl shadow-neutral-300/40 border border-neutral-200/60 overflow-hidden">
+              <textarea
+                value={floatInput}
+                onChange={(e) => setFloatInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(floatInput); } }}
+                placeholder="和我聊聊，你想要什么设计。"
+                rows={2}
+                className="w-full resize-none px-4 pt-3 pb-1 text-sm outline-none bg-transparent placeholder:text-neutral-400"
+              />
+              <div className="flex items-center justify-between px-3 py-2">
+                <div className="flex items-center gap-0.5">
+                  <button className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-50 transition-colors"><Plus size={14} /></button>
+                  <button className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-50 transition-colors"><Smile size={14} /></button>
+                  <button className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-50 transition-colors"><Paperclip size={14} /></button>
+                </div>
+                <motion.button
+                  onClick={() => handleSend(floatInput)}
+                  whileTap={{ scale: 0.95 }}
+                  className={cn(
+                    "p-2 rounded-xl text-white transition-all",
+                    floatInput.trim() ? "bg-neutral-900 hover:bg-neutral-800" : "bg-neutral-300"
+                  )}
+                >
+                  <Send size={14} />
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
