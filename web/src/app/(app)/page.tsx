@@ -259,7 +259,7 @@ export default function HomePage() {
   return (
     <div data-scroll-root className="flex-1 flex flex-col h-full overflow-y-auto bg-[#fafafa] relative">
       {/* ═══════ FIRST SCREEN ═══════ */}
-      <section className="pt-10 pb-8 px-6 relative">
+      <section className="pt-[100px] pb-8 px-6 relative">
         {/* Background gradient orbs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
           <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] bg-gradient-to-br from-blue-200/35 to-cyan-200/20 rounded-full blur-3xl" />
