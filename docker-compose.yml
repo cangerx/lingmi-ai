@@ -1,0 +1,79 @@
+version: "3.8"
+
+services:
+  # Go backend
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - SERVER_PORT=8080
+      - SERVER_MODE=debug
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=lingmiai
+      - DATABASE_PASSWORD=M4CAbd7TsR58EjH4
+      - DATABASE_DBNAME=lingmiai
+      - DATABASE_SSLMODE=disable
+      - REDIS_ADDR=redis:6379
+      - JWT_SECRET=lingmiai-jwt-secret-change-in-production
+    volumes:
+      - uploads:/app/uploads
+    restart: unless-stopped
+
+  # Next.js frontend
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  # PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: lingmiai
+      POSTGRES_PASSWORD: M4CAbd7TsR58EjH4
+      POSTGRES_DB: lingmiai
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lingmiai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  uploads:
