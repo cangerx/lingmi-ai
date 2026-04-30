@@ -7,11 +7,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
   Plus,
-  Settings2,
+  Smile,
+  Paperclip,
   MapPin,
-  Star,
   X,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   PenTool,
   PlusSquare,
   ShoppingBag,
@@ -19,6 +21,14 @@ import {
   Search as SearchIcon,
   Sparkles,
   Eraser,
+  Image as ImageIcon,
+  Crop,
+  CreditCard,
+  Video,
+  Copy,
+  Shirt,
+  LayoutGrid,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -114,15 +124,23 @@ const AGENTS: AgentConfig[] = [
   },
 ];
 
-/* ── Quick tool bar (bottom fixed) ──────────────── */
-const quickTools = [
-  { label: "图片编辑", desc: "导入图片，自由编辑", href: "/editor", icon: PenTool, boxed: true },
-  { label: "创建设计", desc: "从空白画布开始设计", href: "/poster", icon: PlusSquare, boxed: true },
+/* ── Tool bar section ─────────────────────────────── */
+const boxedTools = [
+  { label: "图片编辑", desc: "导入图片，自由编辑", href: "/editor", icon: ImageIcon },
+  { label: "创建设计", desc: "从空白画布开始设计", href: "/poster", icon: Crop },
+];
+
+const gridTools = [
   { label: "商品套图", href: "/product-photo", icon: ShoppingBag, hot: true },
   { label: "A+/详情页", href: "/tools", icon: FileText },
   { label: "智能抠图", href: "/cutout", icon: SearchIcon },
   { label: "变清晰", href: "/upscale", icon: Sparkles },
   { label: "AI消除", href: "/eraser", icon: Eraser },
+  { label: "证件照", href: "/tools", icon: CreditCard },
+  { label: "爆款视频", href: "/tools", icon: Video },
+  { label: "爆款图复刻", href: "/tools", icon: Copy },
+  { label: "服饰穿戴", href: "/tools", icon: Shirt },
+  { label: "更多", href: "/tools", icon: LayoutGrid },
 ];
 
 /* ── Tabs for second screen ──────────────────────── */
@@ -216,9 +234,9 @@ export default function HomePage() {
   const agent = AGENTS[activeAgent];
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#fafafa] relative pb-16">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#fafafa] relative">
       {/* ═══════ FIRST SCREEN ═══════ */}
-      <section className="pt-10 pb-6 px-6 relative overflow-hidden min-h-[calc(100vh-120px)] flex flex-col">
+      <section className="pt-10 pb-8 px-6 relative overflow-hidden">
         {/* Background gradient orbs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] bg-gradient-to-br from-blue-200/35 to-cyan-200/20 rounded-full blur-3xl" />
@@ -227,7 +245,7 @@ export default function HomePage() {
         </div>
 
         <motion.div
-          className="max-w-3xl mx-auto text-center relative z-10 flex-1 flex flex-col"
+          className="max-w-3xl mx-auto text-center relative z-10"
           initial="hidden"
           animate="visible"
           variants={stagger}
@@ -238,7 +256,7 @@ export default function HomePage() {
           </motion.h1>
 
           {/* Agent tags */}
-          <motion.div variants={fadeUp} className="flex items-center justify-center gap-2.5 mb-6">
+          <motion.div variants={fadeUp} className="flex items-center justify-center gap-2 mb-7">
             {AGENTS.map((a, i) => (
               <motion.button
                 key={a.label}
@@ -246,11 +264,12 @@ export default function HomePage() {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 className={cn(
-                  "flex items-center gap-1.5 px-4 py-2 rounded-full text-sm transition-all border-2",
+                  "flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] transition-all",
                   activeAgent === i
-                    ? `bg-white ${a.borderColor} shadow-sm font-medium text-neutral-900`
-                    : "bg-white/70 border-transparent text-neutral-500 hover:bg-white hover:border-neutral-200"
+                    ? "bg-white font-medium text-neutral-900"
+                    : "bg-white/60 text-neutral-500 hover:bg-white/90"
                 )}
+                style={activeAgent === i ? { boxShadow: `0 0 0 1.5px ${a.color}` } : undefined}
               >
                 <span
                   className="w-2 h-2 rounded-full shrink-0"
@@ -258,7 +277,7 @@ export default function HomePage() {
                 />
                 <span>{a.label}</span>
                 {activeAgent === i && (
-                  <X size={14} className="text-neutral-400 ml-0.5" />
+                  <X size={12} className="text-neutral-400 ml-0.5" />
                 )}
               </motion.button>
             ))}
@@ -267,60 +286,31 @@ export default function HomePage() {
           {/* Chat input area */}
           <motion.div
             variants={scaleUp}
-            className="rounded-2xl overflow-hidden shadow-lg"
-            style={{
-              background: "white",
-              border: `2px solid color-mix(in srgb, ${agent.color} 30%, transparent)`,
-            }}
+            className="rounded-2xl overflow-hidden shadow-lg shadow-neutral-200/40 bg-white border border-neutral-200/60 text-left"
           >
-            {/* Dropdown selectors row */}
-            <div className="flex items-center gap-1 px-4 pt-3 pb-1 flex-wrap">
-              {agent.dropdowns.length > 0 && agent.label === "电商商品Agent" && (
-                <input
-                  type="text"
-                  placeholder="请输入产品名称"
-                  className="text-xs text-neutral-600 placeholder:text-neutral-400 outline-none bg-transparent w-28 px-1 py-1 border-b border-transparent focus:border-neutral-300 transition-colors"
-                />
-              )}
-              {agent.label === "海报Agent" && (
-                <input
-                  type="text"
-                  placeholder="请输入主标题"
-                  className="text-xs text-neutral-600 placeholder:text-neutral-400 outline-none bg-transparent w-24 px-1 py-1 border-b border-transparent focus:border-neutral-300 transition-colors"
-                />
-              )}
-              {agent.dropdowns.map((dd) => (
-                <MiniDropdown key={dd.label} label={dd.label} options={dd.options} />
-              ))}
-            </div>
-
             {/* Textarea */}
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={agent.placeholder}
-              rows={3}
-              className="w-full resize-none px-5 pt-2 pb-2 text-sm outline-none bg-transparent placeholder:text-neutral-400"
+              placeholder="和我聊聊，你想要什么设计。"
+              rows={4}
+              className="w-full resize-none px-5 pt-4 pb-2 text-sm outline-none bg-transparent placeholder:text-neutral-400"
             />
 
             {/* Bottom toolbar */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-t border-neutral-100/60">
-              <div className="flex items-center gap-1">
+            <div className="flex items-center justify-between px-4 py-2.5">
+              <div className="flex items-center gap-0.5">
                 <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-neutral-500 hover:bg-neutral-50 transition-colors">
                   <Plus size={14} /> 添加
                 </button>
-                <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-neutral-50 text-[11px] text-neutral-500">
-                  <Settings2 size={12} /> seedance 2.0
-                </span>
-                <button className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-50 transition-colors"><MapPin size={15} /></button>
-                <button className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-50 transition-colors"><Settings2 size={15} /></button>
-                <button className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-50 transition-colors"><Star size={15} /></button>
+                <button className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-50 transition-colors"><Smile size={16} /></button>
+                <button className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-50 transition-colors"><Paperclip size={16} /></button>
+                <button className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-50 transition-colors"><MapPin size={16} /></button>
               </div>
               <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium text-white shadow-md transition-all"
-                style={{ backgroundColor: agent.color }}
+                className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium text-white shadow-md transition-all bg-[#F75A60] hover:bg-[#e5484e]"
               >
                 <Send size={14} /> 发送
               </motion.button>
@@ -328,7 +318,7 @@ export default function HomePage() {
           </motion.div>
 
           {/* Feature cards below input */}
-          <motion.div variants={fadeUp} className="mt-6 flex-1">
+          <motion.div variants={fadeUp} className="mt-7">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeAgent}
@@ -339,23 +329,24 @@ export default function HomePage() {
                 className="grid grid-cols-4 gap-4"
               >
                 {agent.cards.map((card) => (
-                  <div
+                  <Link
                     key={card.title}
-                    className="group rounded-2xl bg-gradient-to-b from-neutral-50 to-white border border-neutral-100 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
+                    href="/tools"
+                    className="group rounded-2xl bg-[#f0f7f4] border border-neutral-100/80 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer"
                   >
-                    <div className="px-4 pt-3 pb-2">
-                      <h3 className="text-sm font-semibold text-neutral-800">{card.title}</h3>
+                    <div className="pt-4 pb-2 text-center">
+                      <h3 className="text-[13px] font-semibold text-neutral-800">{card.title}</h3>
                     </div>
-                    <div className="px-3 pb-3 flex justify-center">
+                    <div className="px-2 pb-2 flex justify-center">
                       <Image
                         src={card.images[0]}
                         alt={card.title}
-                        width={240}
-                        height={120}
-                        className="rounded-lg object-cover w-full h-[100px] group-hover:scale-[1.02] transition-transform duration-300"
+                        width={260}
+                        height={140}
+                        className="rounded-xl object-cover w-full h-[110px] group-hover:scale-[1.03] transition-transform duration-300"
                       />
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </motion.div>
             </AnimatePresence>
@@ -363,32 +354,81 @@ export default function HomePage() {
         </motion.div>
       </section>
 
+      {/* ═══════ TOOL BAR SECTION (inline) ═══════ */}
+      <section className="px-6 pb-6">
+        <div className="max-w-5xl mx-auto flex gap-3">
+          {/* Left: boxed tool cards */}
+          <div className="flex gap-3 shrink-0">
+            {boxedTools.map((tool) => {
+              const Icon = tool.icon;
+              return (
+                <Link
+                  key={tool.label}
+                  href={tool.href}
+                  className="w-[160px] px-4 pt-4 pb-3 rounded-xl border border-neutral-200 bg-white hover:shadow-md hover:border-neutral-300 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <h4 className="text-sm font-semibold text-neutral-800">{tool.label}</h4>
+                    <p className="text-[11px] text-neutral-400 mt-0.5">{tool.desc}</p>
+                  </div>
+                  <Icon size={18} className="text-neutral-400 mt-3" />
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Right: 2-row tool grid */}
+          <div className="flex-1 grid grid-cols-5 gap-x-1 gap-y-0.5">
+            {gridTools.map((tool) => {
+              const Icon = tool.icon;
+              return (
+                <Link
+                  key={tool.label}
+                  href={tool.href}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-all whitespace-nowrap"
+                >
+                  <Icon size={14} className="text-neutral-400 shrink-0" />
+                  <span>{tool.label}</span>
+                  {tool.hot && <span className="text-orange-500">🔥</span>}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* ═══════ SECOND SCREEN — Tab Content ═══════ */}
       <section className="px-6 pb-12">
         <div className="max-w-5xl mx-auto">
           {/* Tabs */}
-          <div className="flex items-center gap-1 mb-6">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  "relative px-4 py-2 rounded-xl text-sm transition-all",
-                  activeTab === tab
-                    ? "text-white font-medium"
-                    : "text-neutral-500 hover:bg-neutral-100/80 hover:text-neutral-700"
-                )}
-              >
-                {activeTab === tab && (
-                  <motion.div
-                    layoutId="tab-bg"
-                    className="absolute inset-0 bg-neutral-900 rounded-xl"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10">{tab}</span>
-              </button>
-            ))}
+          <div className="flex items-center gap-0.5 mb-6">
+            {tabs.map((tab) => {
+              const isSpecial = tab === "一键同款";
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    "relative px-4 py-2 rounded-lg text-sm transition-all",
+                    activeTab === tab
+                      ? "text-neutral-900 font-bold"
+                      : "text-neutral-400 hover:text-neutral-600"
+                  )}
+                >
+                  {activeTab === tab && (
+                    <motion.div
+                      layoutId="tab-underline"
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-neutral-900 rounded-full"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-1">
+                    {isSpecial && <Zap size={12} className="text-orange-400" />}
+                    {tab}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Showcase Grid */}
@@ -448,35 +488,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══════ FIXED BOTTOM TOOLBAR ═══════ */}
-      <div className="fixed bottom-0 left-[72px] right-0 z-30 bg-white/80 backdrop-blur-xl border-t border-neutral-100">
-        <div className="max-w-5xl mx-auto flex items-center gap-1 px-4 py-2">
-          {quickTools.map((tool) => {
-            const Icon = tool.icon;
-            return (
-              <Link
-                key={tool.label}
-                href={tool.href}
-                className={cn(
-                  "flex items-center gap-2 shrink-0 transition-all text-xs",
-                  tool.boxed
-                    ? "px-4 py-2.5 rounded-xl border border-neutral-200 bg-white hover:shadow-sm hover:border-neutral-300 mr-1"
-                    : "px-3 py-2 rounded-lg text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700"
-                )}
-              >
-                <Icon size={15} className={tool.boxed ? "text-neutral-700" : ""} />
-                <span className={tool.boxed ? "font-medium text-neutral-800" : ""}>
-                  {tool.label}
-                  {tool.hot && <span className="ml-1 text-orange-500">🔥</span>}
-                </span>
-                {tool.boxed && tool.desc && (
-                  <span className="text-[11px] text-neutral-400 ml-1 hidden lg:inline">{tool.desc}</span>
-                )}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
