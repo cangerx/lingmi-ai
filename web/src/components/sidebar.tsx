@@ -32,9 +32,9 @@ export default function Sidebar() {
     pathname === href || (href !== "/" && pathname.startsWith(href));
 
   return (
-    <aside className="flex flex-col items-center w-[72px] h-screen border-r border-neutral-100 bg-white/80 backdrop-blur-xl shrink-0 relative z-10">
+    <aside className="flex flex-col items-center w-[72px] h-screen border-r border-neutral-200/40 bg-transparent shrink-0 relative z-10">
       {/* Logo */}
-      <div className="flex items-center justify-center h-14 w-full border-b border-neutral-100">
+      <div className="flex items-center justify-center h-12 w-full">
         <Link href="/" className="group">
           <motion.div whileHover={{ scale: 1.08, rotate: 3 }} whileTap={{ scale: 0.95 }} transition={{ type: "spring", stiffness: 400, damping: 17 }}>
             <Image src="/logo-dark.svg" alt="灵觅" width={32} height={32} className="object-contain" style={{ width: "auto", height: "auto" }} priority />
