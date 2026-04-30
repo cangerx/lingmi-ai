@@ -39,9 +39,8 @@ export default function Sidebar() {
             whileHover={{ scale: 1.08, rotate: 3 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm"
           >
-            <span className="text-white font-bold text-sm">灵</span>
+            <img src="/logo-icon.svg" alt="灵觅" className="w-7 h-7" />
           </motion.div>
         </Link>
       </div>
