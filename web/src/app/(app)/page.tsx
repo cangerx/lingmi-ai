@@ -261,7 +261,7 @@ export default function HomePage() {
       {/* ═══════ FIRST SCREEN ═══════ */}
       <section className="pt-10 pb-8 px-6 relative">
         {/* Background gradient orbs */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
           <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] bg-gradient-to-br from-blue-200/35 to-cyan-200/20 rounded-full blur-3xl" />
           <div className="absolute top-[5%] right-[-5%] w-[450px] h-[450px] bg-gradient-to-br from-purple-200/30 to-violet-200/15 rounded-full blur-3xl" />
           <div className="absolute bottom-[10%] left-[30%] w-[350px] h-[350px] bg-gradient-to-br from-pink-200/20 to-orange-200/10 rounded-full blur-3xl" />
