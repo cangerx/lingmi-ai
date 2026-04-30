@@ -28,7 +28,7 @@ export default function PosterPage() {
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
-        className="w-[360px] border-r border-white/60 bg-white/80 glass flex flex-col shrink-0"
+        className="w-[360px] border-r border-neutral-100 bg-white/80 backdrop-blur-sm flex flex-col shrink-0"
       >
         <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100/60">
           <motion.div whileHover={{ scale: 1.1, rotate: 5 }} className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-md shadow-purple-200/50">
@@ -48,7 +48,7 @@ export default function PosterPage() {
               onChange={(e) => setPrompt(e.target.value)}
               rows={4}
               placeholder="描述你要生成的海报内容，如：双十一电商促销活动，红色主题，大字标题50%off..."
-              className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm outline-none focus:border-neutral-400 resize-none transition-colors"
+              className="w-full px-3 py-2 rounded-lg border border-neutral-200/60 text-sm outline-none focus:border-neutral-300 focus:shadow-sm resize-none transition-colors"
             />
           </div>
 
@@ -79,7 +79,7 @@ export default function PosterPage() {
                   onClick={() => setPosterSize(s.size)}
                   className={cn(
                     "flex flex-col items-center gap-1 p-3 rounded-lg border text-xs transition-all",
-                    posterSize === s.size ? "border-purple-500 bg-purple-50/50" : "border-[var(--color-border)] hover:border-neutral-300"
+                    posterSize === s.size ? "border-purple-500 bg-purple-50/50" : "border-neutral-200/60 hover:border-neutral-300"
                   )}
                 >
                   <span className="font-medium text-neutral-900">{s.name}</span>
@@ -94,7 +94,7 @@ export default function PosterPage() {
             <input
               type="text"
               placeholder="例如：限时特惠"
-              className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm outline-none focus:border-neutral-400 transition-colors"
+              className="w-full px-3 py-2 rounded-lg border border-neutral-200/60 text-sm outline-none focus:border-neutral-300 focus:shadow-sm transition-colors"
             />
           </div>
 
@@ -103,12 +103,12 @@ export default function PosterPage() {
             <input
               type="text"
               placeholder="例如：全场 5 折起"
-              className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm outline-none focus:border-neutral-400 transition-colors"
+              className="w-full px-3 py-2 rounded-lg border border-neutral-200/60 text-sm outline-none focus:border-neutral-300 focus:shadow-sm transition-colors"
             />
           </div>
         </div>
 
-        <div className="p-5 border-t border-[var(--color-border)]">
+        <div className="p-5 border-t border-neutral-200/60">
           <button
             disabled={!prompt.trim() || generating}
             onClick={async () => {
@@ -135,12 +135,12 @@ export default function PosterPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.15 }}
-        className="flex-1 p-6 overflow-y-auto bg-neutral-50/50"
+        className="flex-1 p-6 overflow-y-auto bg-[#fafafa]"
       >
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {results.length > 0
             ? results.map((r: any, i: number) => (
-                <div key={i} className="group relative aspect-[9/16] rounded-xl overflow-hidden border border-[var(--color-border)] bg-white">
+                <div key={i} className="group relative aspect-[9/16] rounded-xl overflow-hidden border border-neutral-200/60 bg-white">
                   {r?.result_url ? (
                     <img src={r.result_url} alt="" className="w-full h-full object-cover" />
                   ) : (
@@ -154,7 +154,7 @@ export default function PosterPage() {
                 </div>
               ))
             : [1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="aspect-[9/16] rounded-xl bg-white border border-[var(--color-border)] flex items-center justify-center">
+                <div key={i} className="aspect-[9/16] rounded-xl bg-white border border-neutral-200/60 flex items-center justify-center">
                   <div className="text-center">
                     <ImageIcon size={28} className="mx-auto text-neutral-200 mb-2" />
                     <p className="text-xs text-neutral-300">海报 {i}</p>

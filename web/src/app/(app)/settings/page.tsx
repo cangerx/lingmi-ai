@@ -69,30 +69,37 @@ export default function SettingsPage() {
 
   if (!user) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-xl border border-[var(--color-border)] p-12 text-center">
-          <User size={32} className="mx-auto text-neutral-300 mb-3" />
-          <p className="text-neutral-400 text-sm mb-4">请先登录</p>
-          <Link
-            href="/login"
-            className="px-6 py-2.5 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors"
-          >
-            去登录
-          </Link>
+      <div className="flex-1 overflow-y-auto bg-[#fafafa]">
+        <div className="max-w-3xl mx-auto px-6 py-8">
+          <div className="bg-white/80 rounded-2xl border border-neutral-200/60 p-12 text-center shadow-sm">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-200/60 flex items-center justify-center mx-auto mb-4">
+              <User size={24} className="text-neutral-400" />
+            </div>
+            <p className="text-neutral-500 text-sm mb-4">请先登录</p>
+            <Link
+              href="/login"
+              className="px-6 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors shadow-md"
+            >
+              去登录
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8">
+    <div className="flex-1 overflow-y-auto bg-[#fafafa]">
+      <div className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex items-center gap-3 mb-6">
-        <Settings size={20} className="text-neutral-400" />
-        <h1 className="text-xl font-semibold text-neutral-900">个人中心</h1>
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/60 flex items-center justify-center">
+          <Settings size={16} className="text-neutral-400" />
+        </div>
+        <h1 className="text-base font-semibold text-neutral-900">个人中心</h1>
       </div>
 
       {/* User card */}
-      <div className="bg-white rounded-xl border border-[var(--color-border)] p-6 mb-6">
+      <div className="bg-white/80 rounded-2xl border border-neutral-200/60 p-6 mb-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center">
@@ -134,7 +141,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-[var(--color-border)]">
+      <div className="flex gap-1 mb-6 border-b border-neutral-100">
         {TABS.map((label, i) => {
           const Icon = tabIcons[i];
           return (
@@ -157,19 +164,19 @@ export default function SettingsPage() {
 
       {/* Tab content */}
       {activeTab === 0 && (
-        <div className="bg-white rounded-xl border border-[var(--color-border)] divide-y divide-[var(--color-border)]">
+        <div className="bg-white/80 rounded-2xl border border-neutral-200/60 divide-y divide-neutral-100 shadow-sm">
           <div className="p-5">
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">昵称</label>
             <div className="flex gap-3">
               <input
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm outline-none focus:border-neutral-400 transition-colors"
+                className="flex-1 px-3 py-2 rounded-xl border border-neutral-200/60 bg-white/60 text-sm outline-none focus:border-neutral-300 focus:bg-white focus:shadow-sm transition-all"
               />
               <button
                 onClick={handleSaveProfile}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 disabled:opacity-50 transition-colors shadow-md"
               >
                 {saving ? "保存中..." : "保存"}
               </button>
@@ -196,7 +203,7 @@ export default function SettingsPage() {
       )}
 
       {activeTab === 1 && (
-        <div className="bg-white rounded-xl border border-[var(--color-border)]">
+        <div className="bg-white/80 rounded-2xl border border-neutral-200/60 shadow-sm">
           {creditLogs.length === 0 ? (
             <div className="p-12 text-center">
               <p className="text-neutral-400 text-sm">暂无消费记录</p>
@@ -204,7 +211,7 @@ export default function SettingsPage() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[var(--color-border)] text-neutral-400 text-xs">
+                <tr className="border-b border-neutral-100 text-neutral-400 text-xs">
                   <th className="text-left px-5 py-3 font-medium">时间</th>
                   <th className="text-left px-5 py-3 font-medium">类型</th>
                   <th className="text-left px-5 py-3 font-medium">模型</th>
@@ -214,7 +221,7 @@ export default function SettingsPage() {
               </thead>
               <tbody>
                 {creditLogs.map((log) => (
-                  <tr key={log.id} className="border-b border-[var(--color-border)] last:border-0">
+                  <tr key={log.id} className="border-b border-neutral-100 last:border-0">
                     <td className="px-5 py-3 text-neutral-500">
                       {new Date(log.created_at).toLocaleString("zh-CN")}
                     </td>
@@ -233,10 +240,11 @@ export default function SettingsPage() {
       )}
 
       {activeTab === 2 && (
-        <div className="bg-white rounded-xl border border-[var(--color-border)] p-12 text-center">
+        <div className="bg-white/80 rounded-2xl border border-neutral-200/60 p-12 text-center shadow-sm">
           <p className="text-neutral-400 text-sm">暂无充值记录</p>
         </div>
       )}
+      </div>
     </div>
   );
 }

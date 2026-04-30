@@ -35,8 +35,8 @@ export default function TemplatesPage() {
   return (
     <div className="h-full flex">
       {/* Left sidebar: categories */}
-      <div className="w-[200px] border-r border-[var(--color-border)] bg-white flex flex-col shrink-0">
-        <div className="px-4 py-4 border-b border-[var(--color-border)]">
+      <div className="w-[200px] border-r border-neutral-100 bg-white/80 backdrop-blur-sm flex flex-col shrink-0">
+        <div className="px-4 py-4 border-b border-neutral-100">
           <div className="flex items-center gap-2">
             <LayoutTemplate size={18} className="text-neutral-400" />
             <h2 className="text-sm font-semibold text-neutral-900">模板中心</h2>
@@ -62,16 +62,16 @@ export default function TemplatesPage() {
       </div>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 bg-[#fafafa]">
         {/* Search & filters */}
-        <div className="px-6 py-4 border-b border-[var(--color-border)] bg-white space-y-3">
+        <div className="px-6 py-4 border-b border-neutral-100 bg-white/80 backdrop-blur-sm space-y-3">
           <div className="relative max-w-md">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索模板..."
-              className="w-full pl-9 pr-4 py-2 rounded-lg border border-[var(--color-border)] text-sm outline-none focus:border-neutral-400 transition-colors"
+              className="w-full pl-9 pr-4 py-2 rounded-xl border border-neutral-200/60 bg-white/60 text-sm outline-none focus:border-neutral-300 focus:bg-white focus:shadow-sm transition-all"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ export default function TemplatesPage() {
                 <div
                   key={i}
                   className={cn(
-                    "rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-200 border border-[var(--color-border)] overflow-hidden hover:shadow-md transition-all cursor-pointer group",
+                    "rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-200/80 border border-neutral-200/60 overflow-hidden hover:shadow-lg hover:border-neutral-200 transition-all cursor-pointer group",
                     h
                   )}
                 >

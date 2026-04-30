@@ -15,7 +15,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--color-bg-page)]">
+    <div className="flex h-screen overflow-hidden bg-[#fafafa]">
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar />

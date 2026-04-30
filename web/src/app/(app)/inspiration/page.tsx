@@ -52,7 +52,7 @@ export default function InspirationPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-[var(--color-border)] bg-white space-y-3">
+      <div className="px-6 py-4 border-b border-neutral-200/60 bg-white space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-yellow-400 flex items-center justify-center">
@@ -66,7 +66,7 @@ export default function InspirationPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索灵感..."
-              className="w-full pl-9 pr-4 py-2 rounded-lg border border-[var(--color-border)] text-sm outline-none focus:border-neutral-400 transition-colors"
+              className="w-full pl-9 pr-4 py-2 rounded-lg border border-neutral-200/60 text-sm outline-none focus:border-neutral-300 focus:shadow-sm transition-colors"
             />
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function InspirationPage() {
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="group rounded-xl border border-[var(--color-border)] overflow-hidden bg-white hover:shadow-lg transition-all cursor-pointer"
+                  className="group rounded-2xl border border-neutral-200/60 overflow-hidden bg-white hover:shadow-lg transition-all cursor-pointer"
                 >
                   {/* Image placeholder */}
                   <div
@@ -133,7 +133,7 @@ export default function InspirationPage() {
 
         {/* Load more */}
         <div className="text-center py-8">
-          <button className="px-6 py-2 rounded-lg border border-[var(--color-border)] text-sm text-neutral-500 hover:bg-neutral-50 transition-colors">
+          <button className="px-6 py-2 rounded-lg border border-neutral-200/60 text-sm text-neutral-500 hover:bg-neutral-50 transition-colors">
             加载更多
           </button>
         </div>

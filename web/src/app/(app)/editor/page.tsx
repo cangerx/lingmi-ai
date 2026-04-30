@@ -39,7 +39,7 @@ export default function EditorPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-6 py-3 border-b border-[var(--color-border)] bg-white">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-200/60 bg-white">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center">
             <PenTool size={16} className="text-white" />
@@ -47,7 +47,7 @@ export default function EditorPage() {
           <h1 className="text-sm font-semibold text-neutral-900">图片编辑</h1>
         </div>
         <div className="flex gap-2">
-          <button className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-sm text-neutral-600 hover:bg-neutral-50 transition-colors flex items-center gap-1.5">
+          <button className="px-3 py-1.5 rounded-lg border border-neutral-200/60 text-sm text-neutral-600 hover:bg-neutral-50 transition-colors flex items-center gap-1.5">
             <Download size={14} /> 导出
           </button>
         </div>
@@ -56,7 +56,7 @@ export default function EditorPage() {
       {previewUrl ? (
         <div className="flex-1 flex">
           {/* Left toolbar */}
-          <div className="w-16 border-r border-[var(--color-border)] bg-white flex flex-col items-center py-3 gap-1">
+          <div className="w-16 border-r border-neutral-200/60 bg-white flex flex-col items-center py-3 gap-1">
             {LEFT_TOOLS.map((tool) => {
               const Icon = tool.icon;
               return (
@@ -81,7 +81,7 @@ export default function EditorPage() {
           </div>
 
           {/* Right panel */}
-          <div className="w-[240px] border-l border-[var(--color-border)] bg-white p-4">
+          <div className="w-[240px] border-l border-neutral-200/60 bg-white p-4">
             <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-3">{activeTool}</h3>
             <div className="space-y-4">
               {activeTool === "调整" && (

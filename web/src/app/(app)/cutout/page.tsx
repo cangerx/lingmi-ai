@@ -38,7 +38,7 @@ export default function CutoutPage() {
         initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.35 }}
-        className="flex items-center justify-between px-6 py-4 border-b border-white/60 glass"
+        className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 glass"
       >
         <div className="flex items-center gap-3">
           <motion.div whileHover={{ scale: 1.1, rotate: 5 }} className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-md shadow-emerald-200/50">
@@ -57,7 +57,7 @@ export default function CutoutPage() {
           >
             {processing ? <><Loader2 size={14} className="animate-spin" /> 处理中</> : '开始抠图'}
           </button>
-          <button className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-sm text-neutral-600 hover:bg-neutral-50 transition-colors flex items-center gap-1.5">
+          <button className="px-3 py-1.5 rounded-lg border border-neutral-200/60 text-sm text-neutral-600 hover:bg-neutral-50 transition-colors flex items-center gap-1.5">
             <Download size={14} /> 下载
           </button>
         </div>

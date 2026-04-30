@@ -40,7 +40,7 @@ export default function UpscalePage() {
 
   return (
     <div className="h-full flex flex-col">
-      <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.35 }} className="flex items-center justify-between px-6 py-3 border-b border-white/60 glass">
+      <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.35 }} className="flex items-center justify-between px-6 py-3 border-b border-neutral-100 glass">
         <div className="flex items-center gap-3">
           <motion.div whileHover={{ scale: 1.1, rotate: 5 }} className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-md shadow-amber-200/50">
             <Sparkles size={16} className="text-white" />
@@ -50,7 +50,7 @@ export default function UpscalePage() {
 
         {previewUrl && (
           <div className="flex items-center gap-3">
-            <div className="flex gap-1 px-2 py-1 rounded-lg bg-neutral-50 border border-[var(--color-border)]">
+            <div className="flex gap-1 px-2 py-1 rounded-lg bg-neutral-50 border border-neutral-200/60">
               {SCALES.map((s) => (
                 <button
                   key={s.label}
@@ -67,7 +67,7 @@ export default function UpscalePage() {
             <button onClick={handleUpscale} disabled={processing} className="px-3 py-1.5 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors flex items-center gap-1.5">
               {processing ? <><Loader2 size={14} className="animate-spin" /> 处理中</> : <><Sparkles size={14} /> 增强</>}
             </button>
-            <button className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-sm text-neutral-600 hover:bg-neutral-50 transition-colors flex items-center gap-1.5">
+            <button className="px-3 py-1.5 rounded-lg border border-neutral-200/60 text-sm text-neutral-600 hover:bg-neutral-50 transition-colors flex items-center gap-1.5">
               <Download size={14} /> 下载
             </button>
           </div>
@@ -79,12 +79,12 @@ export default function UpscalePage() {
           <div className="flex items-center gap-6">
             <div className="text-center">
               <p className="text-xs text-neutral-400 mb-2">原图</p>
-              <img src={previewUrl} alt="" className="max-w-md max-h-[60vh] rounded-xl border border-[var(--color-border)] shadow-sm" />
+              <img src={previewUrl} alt="" className="max-w-md max-h-[60vh] rounded-2xl border border-neutral-200/60 shadow-sm" />
             </div>
             <ArrowLeftRight size={20} className="text-neutral-300 shrink-0" />
             <div className="text-center">
               <p className="text-xs text-neutral-400 mb-2">增强后 ({scale})</p>
-              <div className="max-w-md max-h-[60vh] rounded-xl border border-[var(--color-border)] bg-white flex items-center justify-center aspect-square shadow-sm">
+              <div className="max-w-md max-h-[60vh] rounded-2xl border border-neutral-200/60 bg-white flex items-center justify-center aspect-square shadow-sm">
                 <div className="text-center">
                   <Sparkles size={24} className="mx-auto text-amber-300 mb-2" />
                   <p className="text-xs text-neutral-300">点击增强按钮开始</p>

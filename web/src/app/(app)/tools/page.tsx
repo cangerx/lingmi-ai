@@ -78,7 +78,7 @@ function ToolCard({ title, desc, href, icon: Icon, gradient }: { title: string; 
     <motion.div variants={fadeUp} whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
       <Link
         href={href}
-        className="group rounded-2xl overflow-hidden border border-white/60 bg-white card-hover gradient-border block"
+        className="group rounded-2xl overflow-hidden border border-neutral-200/60 bg-white/80 hover:shadow-lg hover:border-neutral-200 transition-all block"
       >
         <div className={`aspect-[4/3] bg-gradient-to-br ${gradient} flex items-center justify-center relative overflow-hidden`}>
           <Icon size={28} className="text-neutral-400/30 group-hover:scale-110 transition-transform duration-300" />
@@ -102,14 +102,14 @@ export default function ToolsPage() {
   return (
     <div className="flex-1 overflow-y-auto bg-[#fafafa]">
       {/* Search */}
-      <div className="sticky top-0 z-10 glass border-b border-white/60 px-6 py-3">
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-neutral-100 px-6 py-3">
         <div className="max-w-5xl mx-auto relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="输入模板关键词或功能名称"
-            className="w-full max-w-md pl-9 pr-4 py-2.5 rounded-xl border border-white/60 bg-white/60 text-sm outline-none focus:border-neutral-300 focus:bg-white focus:shadow-sm transition-all"
+            className="w-full max-w-md pl-9 pr-4 py-2.5 rounded-xl border border-neutral-200/60 bg-white/60 text-sm outline-none focus:border-neutral-300 focus:bg-white focus:shadow-sm transition-all"
           />
         </div>
       </div>

@@ -9,7 +9,7 @@ export default function Topbar() {
   const { user, credits } = useAuthStore();
 
   return (
-    <header className="flex items-center justify-end h-12 px-5 glass border-b border-white/60 relative z-10">
+    <header className="flex items-center justify-end h-12 px-5 bg-white/80 backdrop-blur-xl border-b border-neutral-100 relative z-10">
       <div className="flex items-center gap-2.5">
         {/* VIP / Credits */}
         <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>

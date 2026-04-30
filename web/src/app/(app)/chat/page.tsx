@@ -268,12 +268,12 @@ export default function ChatPage() {
         initial={{ x: -15, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.35 }}
-        className="w-[260px] border-r border-neutral-100 bg-white/80 glass flex flex-col shrink-0"
+        className="w-[260px] border-r border-neutral-100 bg-white/80 backdrop-blur-sm flex flex-col shrink-0"
       >
-        <div className="p-3 border-b border-[var(--color-border)]">
+        <div className="p-3 border-b border-neutral-200/60">
           <button
             onClick={createConversation}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-xl border border-neutral-200/60 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
           >
             <Plus size={16} />
             新建对话
@@ -316,7 +316,7 @@ export default function ChatPage() {
       </motion.div>
 
       {/* Chat area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 bg-[#fafafa]">
         {activeConv ? (
           <>
             {/* Chat header */}
@@ -324,7 +324,7 @@ export default function ChatPage() {
               initial={{ y: -8, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.3 }}
-              className="flex items-center justify-between px-6 py-3 border-b border-neutral-100 glass"
+              className="flex items-center justify-between px-6 py-3 border-b border-neutral-100 bg-white/80 backdrop-blur-sm"
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neutral-100 to-neutral-200/60 flex items-center justify-center">
@@ -419,9 +419,9 @@ export default function ChatPage() {
             </div>
 
             {/* Input */}
-            <div className="border-t border-[var(--color-border)] bg-white">
+            <div className="border-t border-neutral-100 bg-white/80 backdrop-blur-sm">
               <div className="max-w-3xl mx-auto px-6 py-4">
-                <div className="rounded-xl border border-[var(--color-border)] focus-within:border-neutral-400 transition-colors">
+                <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm focus-within:border-neutral-300 focus-within:shadow-md transition-all">
                   <textarea
                     ref={textareaRef}
                     value={input}
@@ -439,7 +439,7 @@ export default function ChatPage() {
                     <div className="relative">
                       <button
                         onClick={() => setShowModelPicker(!showModelPicker)}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-neutral-500 hover:bg-neutral-50 transition-colors"
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-neutral-500 hover:bg-neutral-50 transition-colors"
                       >
                         <Bot size={12} />
                         {currentModel.name}
@@ -447,7 +447,7 @@ export default function ChatPage() {
                       </button>
 
                       {showModelPicker && (
-                        <div className="absolute bottom-full left-0 mb-1 w-56 bg-white border border-[var(--color-border)] rounded-lg shadow-lg py-1 z-50">
+                        <div className="absolute bottom-full left-0 mb-1 w-56 bg-white/95 backdrop-blur-xl border border-neutral-200/60 rounded-xl shadow-lg py-1 z-50">
                           {MODELS.map((m) => (
                             <button
                               key={m.id}
@@ -476,7 +476,7 @@ export default function ChatPage() {
                     {streaming ? (
                       <button
                         onClick={stopStreaming}
-                        className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                        className="p-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
                       >
                         <Square size={14} />
                       </button>
@@ -484,7 +484,7 @@ export default function ChatPage() {
                       <button
                         onClick={sendMessage}
                         disabled={!input.trim() || sending}
-                        className="p-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-30 transition-colors"
+                        className="p-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-30 transition-colors shadow-md"
                       >
                         <Send size={14} />
                       </button>
@@ -524,10 +524,10 @@ export default function ChatPage() {
                     key={m.id}
                     onClick={() => setSelectedModel(m.id)}
                     className={cn(
-                      "flex flex-col items-start px-3 py-2.5 rounded-lg border text-left transition-all text-sm",
+                      "flex flex-col items-start px-3 py-2.5 rounded-xl border text-left transition-all text-sm",
                       selectedModel === m.id
                         ? "border-neutral-900 bg-neutral-50"
-                        : "border-[var(--color-border)] hover:border-neutral-300"
+                        : "border-neutral-200/60 hover:border-neutral-300"
                     )}
                   >
                     <span className="font-medium text-neutral-900">{m.name}</span>
@@ -536,7 +536,7 @@ export default function ChatPage() {
                 ))}
               </div>
 
-              <div className="rounded-xl border border-[var(--color-border)] focus-within:border-neutral-400 transition-colors overflow-hidden">
+              <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm focus-within:border-neutral-300 focus-within:shadow-md transition-all overflow-hidden">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -552,7 +552,7 @@ export default function ChatPage() {
                   <button
                     onClick={sendMessage}
                     disabled={!input.trim()}
-                    className="p-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-30 transition-colors"
+                    className="p-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-30 transition-colors shadow-md"
                   >
                     <Send size={14} />
                   </button>

@@ -259,27 +259,22 @@ export default function HomePage() {
   return (
     <div data-scroll-root className="flex-1 flex flex-col h-full overflow-y-auto bg-[#fafafa] relative">
       {/* ═══════ FIRST SCREEN ═══════ */}
-      <section className="pt-10 pb-8 px-6 relative overflow-hidden">
+      <section className="pt-10 pb-8 px-6 relative">
         {/* Background gradient orbs */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10">
           <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] bg-gradient-to-br from-blue-200/35 to-cyan-200/20 rounded-full blur-3xl" />
           <div className="absolute top-[5%] right-[-5%] w-[450px] h-[450px] bg-gradient-to-br from-purple-200/30 to-violet-200/15 rounded-full blur-3xl" />
           <div className="absolute bottom-[10%] left-[30%] w-[350px] h-[350px] bg-gradient-to-br from-pink-200/20 to-orange-200/10 rounded-full blur-3xl" />
         </div>
 
-        <motion.div
-          className="max-w-3xl mx-auto text-center relative z-10"
-          initial="hidden"
-          animate="visible"
-          variants={stagger}
-        >
+        <div className="max-w-3xl mx-auto text-center relative z-10">
           {/* Title */}
-          <motion.h1 variants={fadeUp} className="text-3xl font-bold text-neutral-900 mb-6 tracking-tight">
+          <h1 className="text-3xl font-bold text-neutral-900 mb-6 tracking-tight">
             和我聊聊，你想要什么设计~
-          </motion.h1>
+          </h1>
 
           {/* Agent tags */}
-          <motion.div variants={fadeUp} className="flex items-center justify-center gap-2 mb-7">
+          <div className="flex items-center justify-center gap-2 mb-7">
             {AGENTS.map((a, i) => (
               <motion.button
                 key={a.label}
@@ -304,13 +299,13 @@ export default function HomePage() {
                 )}
               </motion.button>
             ))}
-          </motion.div>
+          </div>
 
           {/* Chat input area */}
-          <motion.div
+          <div
             ref={chatRef}
-            variants={scaleUp}
-            className="rounded-2xl overflow-hidden shadow-lg shadow-neutral-200/40 bg-white border border-neutral-200/60 text-left"
+            className="rounded-2xl overflow-hidden shadow-lg shadow-neutral-200/40 bg-white text-left transition-shadow duration-300"
+            style={{ border: `1.5px solid ${agent.color}30` }}
           >
             {/* Textarea */}
             <textarea
@@ -338,18 +333,17 @@ export default function HomePage() {
                 whileTap={{ scale: 0.97 }}
                 className={cn(
                   "flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium text-white shadow-md transition-all",
-                  input.trim()
-                    ? "bg-[#F75A60] hover:bg-[#e5484e] cursor-pointer"
-                    : "bg-neutral-300 cursor-not-allowed"
+                  input.trim() ? "cursor-pointer" : "cursor-not-allowed opacity-60"
                 )}
+                style={{ backgroundColor: agent.color }}
               >
                 <Send size={14} /> 发送
               </motion.button>
             </div>
-          </motion.div>
+          </div>
 
           {/* Feature cards below input */}
-          <motion.div variants={fadeUp} className="mt-7">
+          <div className="mt-7">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeAgent}
@@ -381,8 +375,8 @@ export default function HomePage() {
                 ))}
               </motion.div>
             </AnimatePresence>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </section>
 
       {/* ═══════ TOOL BAR SECTION (inline) ═══════ */}

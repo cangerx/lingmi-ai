@@ -18,13 +18,13 @@ export default function MusicPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-[var(--color-border)] p-5 space-y-5">
+      <div className="bg-white rounded-2xl border border-neutral-200/60 p-5 space-y-5">
         <div>
           <label className="block text-sm font-medium text-neutral-700 mb-1.5">描述你想要的音乐</label>
           <textarea
             rows={3}
             placeholder="例如：一段轻快的钢琴曲，适合早晨醒来时听..."
-            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm outline-none focus:border-neutral-400 resize-none transition-colors"
+            className="w-full px-3 py-2 rounded-lg border border-neutral-200/60 text-sm outline-none focus:border-neutral-300 focus:shadow-sm resize-none transition-colors"
           />
         </div>
 
@@ -34,7 +34,7 @@ export default function MusicPage() {
             {genres.map((g) => (
               <button
                 key={g}
-                className="px-3 py-1.5 rounded-full border border-[var(--color-border)] text-xs text-neutral-600 hover:border-amber-300 hover:bg-amber-50 transition-colors"
+                className="px-3 py-1.5 rounded-full border border-neutral-200/60 text-xs text-neutral-600 hover:border-amber-300 hover:bg-amber-50 transition-colors"
               >
                 {g}
               </button>
@@ -48,7 +48,7 @@ export default function MusicPage() {
             {moods.map((m) => (
               <button
                 key={m}
-                className="px-3 py-1.5 rounded-full border border-[var(--color-border)] text-xs text-neutral-600 hover:border-amber-300 hover:bg-amber-50 transition-colors"
+                className="px-3 py-1.5 rounded-full border border-neutral-200/60 text-xs text-neutral-600 hover:border-amber-300 hover:bg-amber-50 transition-colors"
               >
                 {m}
               </button>
@@ -59,7 +59,7 @@ export default function MusicPage() {
         <div className="flex gap-4">
           <div className="flex-1">
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">时长</label>
-            <select className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm outline-none">
+            <select className="w-full px-3 py-2 rounded-lg border border-neutral-200/60 text-sm outline-none">
               <option>30 秒</option>
               <option>60 秒</option>
               <option>120 秒</option>
@@ -67,7 +67,7 @@ export default function MusicPage() {
           </div>
           <div className="flex-1">
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">是否含人声</label>
-            <select className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm outline-none">
+            <select className="w-full px-3 py-2 rounded-lg border border-neutral-200/60 text-sm outline-none">
               <option>纯音乐</option>
               <option>含人声</option>
             </select>
@@ -82,7 +82,7 @@ export default function MusicPage() {
       {/* Generated music placeholder */}
       <div className="mt-8">
         <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-4">生成历史</h2>
-        <div className="rounded-xl border border-[var(--color-border)] bg-white p-12 text-center">
+        <div className="rounded-2xl border border-neutral-200/60 bg-white p-12 text-center">
           <Music size={32} className="mx-auto text-neutral-200 mb-3" />
           <p className="text-neutral-400 text-sm">还没有生成过音乐</p>
         </div>

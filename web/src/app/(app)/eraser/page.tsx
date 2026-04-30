@@ -35,7 +35,7 @@ export default function EraserPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.35 }} className="flex items-center justify-between px-6 py-3 border-b border-white/60 glass">
+      <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.35 }} className="flex items-center justify-between px-6 py-3 border-b border-neutral-100 glass">
         <div className="flex items-center gap-3">
           <motion.div whileHover={{ scale: 1.1, rotate: 5 }} className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-md shadow-orange-200/50">
             <Eraser size={16} className="text-white" />
@@ -45,7 +45,7 @@ export default function EraserPage() {
 
         {previewUrl && (
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-neutral-50 border border-[var(--color-border)]">
+            <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-neutral-50 border border-neutral-200/60">
               <span className="text-xs text-neutral-500 mr-1">画笔:</span>
               {BRUSH_SIZES.map((s) => (
                 <button
@@ -69,7 +69,7 @@ export default function EraserPage() {
             <button onClick={handleErase} disabled={processing} className="px-3 py-1.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors flex items-center gap-1.5">
               {processing ? <><Loader2 size={14} className="animate-spin" /> 处理中</> : '消除'}
             </button>
-            <button className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-sm text-neutral-600 hover:bg-neutral-50 transition-colors flex items-center gap-1.5">
+            <button className="px-3 py-1.5 rounded-lg border border-neutral-200/60 text-sm text-neutral-600 hover:bg-neutral-50 transition-colors flex items-center gap-1.5">
               <Download size={14} /> 下载
             </button>
           </div>

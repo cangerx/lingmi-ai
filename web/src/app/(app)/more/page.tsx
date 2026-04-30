@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   MessageSquare,
   Video,
@@ -9,7 +10,9 @@ import {
   CreditCard,
   HelpCircle,
   Lightbulb,
+  LayoutGrid,
 } from "lucide-react";
+import { PageContainer, PageHeader } from "@/components/ui/page-shell";
 
 const moreItems = [
   { label: "AI 对话", desc: "GPT / DeepSeek / Gemini 多模型对话", href: "/chat", icon: MessageSquare, color: "bg-blue-50 text-blue-600" },
@@ -23,19 +26,23 @@ const moreItems = [
 
 export default function MorePage() {
   return (
-    <div className="flex-1 overflow-y-auto bg-[#fafafa]">
-      <div className="max-w-3xl mx-auto px-6 py-8">
-        <h1 className="text-base font-semibold text-neutral-900 mb-6">更多</h1>
-        <div className="grid grid-cols-2 gap-3">
-          {moreItems.map((item) => {
-            const Icon = item.icon;
-            return (
+    <PageContainer>
+      <PageHeader title="更多" icon={<LayoutGrid size={16} className="text-neutral-400" />} />
+      <div className="grid grid-cols-2 gap-3">
+        {moreItems.map((item, i) => {
+          const Icon = item.icon;
+          return (
+            <motion.div
+              key={item.label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05, duration: 0.35 }}
+            >
               <Link
-                key={item.label}
                 href={item.href}
-                className="flex items-center gap-4 p-5 rounded-xl bg-white border border-[var(--color-border)] hover:border-neutral-300 hover:shadow-sm transition-all"
+                className="flex items-center gap-4 p-5 rounded-2xl bg-white/80 border border-neutral-200/60 hover:border-neutral-300 hover:shadow-md transition-all"
               >
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${item.color}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.color}`}>
                   <Icon size={18} />
                 </div>
                 <div>
@@ -43,10 +50,10 @@ export default function MorePage() {
                   <p className="text-xs text-neutral-400">{item.desc}</p>
                 </div>
               </Link>
-            );
-          })}
-        </div>
+            </motion.div>
+          );
+        })}
       </div>
-    </div>
+    </PageContainer>
   );
 }

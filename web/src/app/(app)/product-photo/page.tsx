@@ -51,7 +51,7 @@ export default function ProductPhotoPage() {
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
-        className="w-[360px] border-r border-white/60 bg-white/80 glass flex flex-col shrink-0"
+        className="w-[360px] border-r border-neutral-100 bg-white/80 backdrop-blur-sm flex flex-col shrink-0"
       >
         <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100/60">
           <motion.div
@@ -72,7 +72,7 @@ export default function ProductPhotoPage() {
             <label className="block text-sm font-medium text-neutral-700 mb-2">上传商品图</label>
             {previewUrl ? (
               <div className="relative group">
-                <img src={previewUrl} alt="" className="w-full rounded-xl border border-[var(--color-border)] object-contain max-h-[200px]" />
+                <img src={previewUrl} alt="" className="w-full rounded-xl border border-neutral-200/60 object-contain max-h-[200px]" />
                 <button
                   onClick={() => { setUploadedFile(null); setPreviewUrl(""); }}
                   className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/50 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
@@ -103,10 +103,10 @@ export default function ProductPhotoPage() {
                   key={scene.name}
                   onClick={() => setActiveScene(scene.name)}
                   className={cn(
-                    "flex flex-col items-center gap-1.5 p-2.5 rounded-lg border transition-all",
+                    "flex flex-col items-center gap-1.5 p-2.5 rounded-xl border transition-all",
                     activeScene === scene.name
                       ? "border-blue-500 bg-blue-50/50"
-                      : "border-[var(--color-border)] hover:border-neutral-300"
+                      : "border-neutral-200/60 hover:border-neutral-300"
                   )}
                 >
                   <div className={cn("w-full aspect-square rounded-md", scene.preview)} />
@@ -125,7 +125,7 @@ export default function ProductPhotoPage() {
                   key={r}
                   onClick={() => setActiveRatio(r)}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-xs transition-colors",
+                    "px-3 py-1.5 rounded-lg text-xs transition-colors",
                     activeRatio === r
                       ? "bg-neutral-900 text-white"
                       : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100"
@@ -166,12 +166,12 @@ export default function ProductPhotoPage() {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="描述你想要的背景或风格..."
-              className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm outline-none focus:border-neutral-400 resize-none transition-colors"
+              className="w-full px-3 py-2 rounded-xl border border-neutral-200/60 bg-white/60 text-sm outline-none focus:border-neutral-300 focus:shadow-sm resize-none transition-all"
             />
           </div>
         </div>
 
-        <div className="p-5 border-t border-[var(--color-border)]">
+        <div className="p-5 border-t border-neutral-200/60">
           <button
             disabled={!uploadedFile || generating}
             onClick={async () => {
@@ -192,7 +192,7 @@ export default function ProductPhotoPage() {
                 setGenerating(false);
               }
             }}
-            className="w-full py-2.5 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-xl bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 disabled:opacity-40 transition-colors flex items-center justify-center gap-2 shadow-md"
           >
             {generating ? (
               <><Loader2 size={16} className="animate-spin" /> 生成中...</>
@@ -208,12 +208,12 @@ export default function ProductPhotoPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.15 }}
-        className="flex-1 p-6 overflow-y-auto bg-neutral-50/50"
+        className="flex-1 p-6 overflow-y-auto bg-[#fafafa]"
       >
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {results.length > 0
             ? results.map((r: any, i: number) => (
-                <div key={i} className="group relative rounded-xl overflow-hidden border border-[var(--color-border)] bg-white">
+                <div key={i} className="group relative rounded-2xl overflow-hidden border border-neutral-200/60 bg-white/80 shadow-sm hover:shadow-md transition-all">
                   {r?.result_url ? (
                     <img src={r.result_url} alt="" className="w-full aspect-square object-cover" />
                   ) : (
@@ -227,7 +227,7 @@ export default function ProductPhotoPage() {
                 </div>
               ))
             : Array.from({ length: count }).map((_, i) => (
-                <div key={i} className="aspect-square rounded-xl bg-white border border-[var(--color-border)] flex items-center justify-center">
+                <div key={i} className="aspect-square rounded-2xl bg-white/80 border border-neutral-200/60 flex items-center justify-center shadow-sm">
                   <div className="text-center">
                     <ShoppingBag size={28} className="mx-auto text-neutral-200 mb-2" />
                     <p className="text-xs text-neutral-300">生成结果 {i + 1}</p>
