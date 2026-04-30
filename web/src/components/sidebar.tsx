@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -37,7 +36,7 @@ export default function Sidebar() {
       <div className="flex items-center justify-center h-14 w-full">
         <Link href="/" className="group">
           <motion.div whileHover={{ scale: 1.08, rotate: 3 }} whileTap={{ scale: 0.95 }} transition={{ type: "spring", stiffness: 400, damping: 17 }}>
-            <Image src="/logo-dark.svg" alt="灵觅" width={32} height={32} className="object-contain" style={{ width: "auto", height: "auto" }} priority />
+            <img src="/logo-dark.svg" alt="灵觅" className="h-7 w-auto" />
           </motion.div>
         </Link>
       </div>
