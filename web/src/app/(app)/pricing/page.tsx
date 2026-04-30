@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -46,16 +46,24 @@ const plans = [
 
 export default function PricingPage() {
   return (
-    <div className="flex-1 overflow-y-auto bg-[#fafafa]">
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="text-center mb-10">
-          <h1 className="text-2xl font-bold text-neutral-900 mb-2">
-            选择适合你的方案
-          </h1>
-          <p className="text-sm text-neutral-400">
-            所有方案均支持微信和支付宝付款
-          </p>
+    <div className="h-full flex flex-col bg-[#fafafa]">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-neutral-100 bg-white/80 backdrop-blur-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/60 flex items-center justify-center">
+              <CreditCard size={16} className="text-neutral-400" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold text-neutral-900">选择方案</h1>
+              <p className="text-xs text-neutral-400">所有方案均支持微信和支付宝付款</p>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-4xl mx-auto">
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {plans.map((plan, i) => (
@@ -116,6 +124,7 @@ export default function PricingPage() {
               </motion.button>
             </motion.div>
           ))}
+        </div>
         </div>
       </div>
     </div>

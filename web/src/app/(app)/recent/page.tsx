@@ -3,7 +3,7 @@
 import { Clock, Search, Grid, List } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { PageHeader, PageContainer, EmptyState } from "@/components/ui/page-shell";
+import { PageHeader, PageContainer, PageContent, EmptyState } from "@/components/ui/page-shell";
 
 type ViewMode = "grid" | "list";
 
@@ -38,11 +38,13 @@ export default function RecentPage() {
           </div>
         }
       />
-      <EmptyState
-        icon={<Clock size={24} className="text-neutral-400" />}
-        title="暂无最近打开的项目"
-        description="使用工具创作后会自动记录在这里"
-      />
+      <PageContent>
+        <EmptyState
+          icon={<Clock size={24} className="text-neutral-400" />}
+          title="暂无最近打开的项目"
+          description="使用工具创作后会自动记录在这里"
+        />
+      </PageContent>
     </PageContainer>
   );
 }

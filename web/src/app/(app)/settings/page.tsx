@@ -69,8 +69,16 @@ export default function SettingsPage() {
 
   if (!user) {
     return (
-      <div className="flex-1 overflow-y-auto bg-[#fafafa]">
-        <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="h-full flex flex-col bg-[#fafafa]">
+        <div className="px-6 py-4 border-b border-neutral-100 bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/60 flex items-center justify-center">
+              <Settings size={16} className="text-neutral-400" />
+            </div>
+            <h1 className="text-base font-semibold text-neutral-900">个人中心</h1>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6">
           <div className="bg-white/80 rounded-2xl border border-neutral-200/60 p-12 text-center shadow-sm">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-200/60 flex items-center justify-center mx-auto mb-4">
               <User size={24} className="text-neutral-400" />
@@ -89,14 +97,19 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#fafafa]">
-      <div className="max-w-3xl mx-auto px-6 py-8">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/60 flex items-center justify-center">
-          <Settings size={16} className="text-neutral-400" />
+    <div className="h-full flex flex-col bg-[#fafafa]">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-neutral-100 bg-white/80 backdrop-blur-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/60 flex items-center justify-center">
+            <Settings size={16} className="text-neutral-400" />
+          </div>
+          <h1 className="text-base font-semibold text-neutral-900">个人中心</h1>
         </div>
-        <h1 className="text-base font-semibold text-neutral-900">个人中心</h1>
       </div>
+
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-3xl mx-auto">
 
       {/* User card */}
       <div className="bg-white/80 rounded-2xl border border-neutral-200/60 p-6 mb-6 shadow-sm">
@@ -244,6 +257,7 @@ export default function SettingsPage() {
           <p className="text-neutral-400 text-sm">暂无充值记录</p>
         </div>
       )}
+        </div>
       </div>
     </div>
   );

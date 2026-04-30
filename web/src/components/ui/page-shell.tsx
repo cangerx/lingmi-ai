@@ -12,27 +12,37 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, icon, actions, className }: PageHeaderProps) {
   return (
-    <div className={cn("flex items-center justify-between mb-6", className)}>
-      <div className="flex items-center gap-3">
-        {icon && (
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/60 flex items-center justify-center shrink-0">
-            {icon}
+    <div className={cn("px-6 py-4 border-b border-neutral-100 bg-white/80 backdrop-blur-sm", className)}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {icon && (
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/60 flex items-center justify-center shrink-0">
+              {icon}
+            </div>
+          )}
+          <div>
+            <h1 className="text-base font-semibold text-neutral-900">{title}</h1>
+            {description && <p className="text-xs text-neutral-400 mt-0.5">{description}</p>}
           </div>
-        )}
-        <div>
-          <h1 className="text-base font-semibold text-neutral-900">{title}</h1>
-          {description && <p className="text-xs text-neutral-400 mt-0.5">{description}</p>}
         </div>
+        {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
 }
 
-export function PageContainer({ children, className }: { children: React.ReactNode; className?: string }) {
+export function PageContainer({ children, className, wide = false }: { children: React.ReactNode; className?: string; wide?: boolean }) {
   return (
-    <div className={cn("flex-1 overflow-y-auto bg-[#fafafa]", className)}>
-      <div className="max-w-5xl mx-auto px-6 py-6">{children}</div>
+    <div className={cn("h-full flex flex-col bg-[#fafafa]", className)}>
+      {children}
+    </div>
+  );
+}
+
+export function PageContent({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn("flex-1 overflow-y-auto p-6", className)}>
+      {children}
     </div>
   );
 }

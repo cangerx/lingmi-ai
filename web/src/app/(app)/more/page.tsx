@@ -12,7 +12,7 @@ import {
   Lightbulb,
   LayoutGrid,
 } from "lucide-react";
-import { PageContainer, PageHeader } from "@/components/ui/page-shell";
+import { PageContainer, PageHeader, PageContent } from "@/components/ui/page-shell";
 
 const moreItems = [
   { label: "AI 对话", desc: "GPT / DeepSeek / Gemini 多模型对话", href: "/chat", icon: MessageSquare, color: "bg-blue-50 text-blue-600" },
@@ -28,7 +28,8 @@ export default function MorePage() {
   return (
     <PageContainer>
       <PageHeader title="更多" icon={<LayoutGrid size={16} className="text-neutral-400" />} />
-      <div className="grid grid-cols-2 gap-3">
+      <PageContent>
+        <div className="grid grid-cols-2 gap-3">
         {moreItems.map((item, i) => {
           const Icon = item.icon;
           return (
@@ -53,7 +54,8 @@ export default function MorePage() {
             </motion.div>
           );
         })}
-      </div>
+        </div>
+      </PageContent>
     </PageContainer>
   );
 }
