@@ -5,9 +5,8 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Home,
-  LayoutGrid,
-  LayoutTemplate,
-  Clock,
+  Compass,
+  Wrench,
   FolderOpen,
   Package,
   User,
@@ -21,11 +20,10 @@ import { useSiteConfigStore } from "@/store/site-config";
 
 const navItems = [
   { label: "首页", href: "/", icon: Home },
-  { label: "工具", href: "/tools", icon: LayoutGrid },
-  { label: "模板", href: "/templates", icon: LayoutTemplate },
-  { label: "最近打开", href: "/recent", icon: Clock },
+  { label: "灵感", href: "/inspiration", icon: Compass },
+  { label: "技能", href: "/tools", icon: Wrench },
   { label: "项目", href: "/projects", icon: FolderOpen },
-  { label: "资产库", href: "/assets", icon: Package },
+  { label: "素材", href: "/assets", icon: Package },
   { label: "邀请有礼", href: "/referral", icon: Gift },
 ];
 
