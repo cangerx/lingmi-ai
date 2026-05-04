@@ -12,7 +12,8 @@ type Generation struct {
 	ResultURL   string    `gorm:"size:1000" json:"result_url"`
 	Status      string    `gorm:"size:20;default:pending" json:"status"` // pending, processing, completed, failed
 	CreditsCost float64   `json:"credits_cost"`
-	ErrorMsg    string    `gorm:"size:500" json:"error_msg"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ErrorMsg         string    `gorm:"size:500" json:"error_msg"`
+	ModerationStatus string    `gorm:"size:20;default:skipped" json:"moderation_status"` // skipped, pending, approved, rejected
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }

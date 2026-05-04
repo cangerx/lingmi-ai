@@ -35,6 +35,16 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 }
 
 func AutoMigrate(db *gorm.DB) error {
+	// Fix: drop old system_settings table that used PostgreSQL reserved words as column names
+	if db.Migrator().HasTable("system_settings") {
+		var count int64
+		db.Raw("SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'system_settings' AND column_name = 'group'").Scan(&count)
+		if count > 0 {
+			log.Println("[Migration] Dropping old system_settings table (reserved word columns)")
+			db.Exec("DROP TABLE IF EXISTS system_settings")
+		}
+	}
+
 	return db.AutoMigrate(
 		&model.User{},
 		&model.UserCredits{},
@@ -55,5 +65,12 @@ func AutoMigrate(db *gorm.DB) error {
 		&model.Ad{},
 		&model.AdSlot{},
 		&model.AdStat{},
+		&model.SystemSetting{},
+		&model.ModelConfig{},
+		&model.UserOAuthBinding{},
+		&model.Inspiration{},
+		&model.SensitiveWord{},
+		&model.ModerationLog{},
+		&model.Commission{},
 	)
 }

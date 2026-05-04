@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Expand, Upload, Download, Loader2 } from "lucide-react";
+import { Expand, Download, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { imageAPI } from "@/lib/api";
+import ImageUploader from "@/components/ui/image-uploader";
+import { downloadImage } from "@/lib/download";
+import { usePollGeneration } from "@/hooks/use-poll-generation";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const DIRECTIONS = [
   { name: "四周", value: "all" },
@@ -17,31 +21,49 @@ const DIRECTIONS = [
 const SCALES = ["1.5x", "2x", "3x"];
 
 export default function ExpandPage() {
+  usePageTitle("AI 扩图");
   const [previewUrl, setPreviewUrl] = useState("");
   const [direction, setDirection] = useState("all");
   const [scale, setScale] = useState("2x");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [resultUrl, setResultUrl] = useState("");
+  const { result: pollResult, polling, error: pollError, startPolling } = usePollGeneration();
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setUploadedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
+  const finalResultUrl = pollResult?.status === "completed" ? pollResult.result_url || "" : resultUrl;
+  const isProcessing = processing || polling;
+  const errorMsg = pollError || (pollResult?.status === "failed" ? pollResult.error_msg : null);
+
+  const handleFileSelect = (file: File, url: string) => {
+    setUploadedFile(file);
+    setPreviewUrl(url);
+    setResultUrl("");
   };
 
   const handleExpand = async () => {
     if (!uploadedFile) return;
     setProcessing(true);
+    setResultUrl("");
     try {
       const fd = new FormData();
       fd.append("image", uploadedFile);
       fd.append("direction", direction);
       fd.append("scale", scale);
-      await imageAPI.expand(fd);
-    } catch (e) { console.error(e); }
-    setProcessing(false);
+      const res = await imageAPI.expand(fd);
+      const gen = res.data?.data;
+      if (gen?.result_url) {
+        setResultUrl(gen.result_url);
+        setProcessing(false);
+      } else if (gen?.id) {
+        setProcessing(false);
+        startPolling(gen.id);
+      } else {
+        setProcessing(false);
+      }
+    } catch (e: any) {
+      console.error(e);
+      setProcessing(false);
+    }
   };
 
   return (
@@ -84,10 +106,14 @@ export default function ExpandPage() {
                 </button>
               ))}
             </div>
-            <button onClick={handleExpand} disabled={processing} className="px-3 py-1.5 rounded-lg bg-cyan-500 text-white text-sm font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors flex items-center gap-1.5">
-              {processing ? <><Loader2 size={14} className="animate-spin" /> 处理中</> : '扩展'}
+            <button onClick={handleExpand} disabled={isProcessing} className="px-3 py-1.5 rounded-lg bg-cyan-500 text-white text-sm font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors flex items-center gap-1.5">
+              {isProcessing ? <><Loader2 size={14} className="animate-spin" /> 处理中...</> : '扩展'}
             </button>
-            <button className="px-3 py-1.5 rounded-lg border border-neutral-200/60 text-sm text-neutral-600 hover:bg-neutral-50 transition-colors flex items-center gap-1.5">
+            <button
+              onClick={() => finalResultUrl && downloadImage(finalResultUrl, "expand.png")}
+              disabled={!finalResultUrl}
+              className="px-3 py-1.5 rounded-lg border border-neutral-200/60 text-sm text-neutral-600 hover:bg-neutral-50 disabled:opacity-40 transition-colors flex items-center gap-1.5"
+            >
               <Download size={14} /> 下载
             </button>
           </div>
@@ -97,22 +123,42 @@ export default function ExpandPage() {
       <div className="flex-1 flex items-center justify-center bg-neutral-50">
         {previewUrl ? (
           <div className="relative">
-            <div className="border-2 border-dashed border-cyan-300 rounded-xl p-8">
-              <img src={previewUrl} alt="" className="max-w-xl max-h-[60vh] rounded-lg shadow-lg" />
-            </div>
-            <p className="text-center text-xs text-neutral-400 mt-3">虚线区域为扩展范围</p>
+            {finalResultUrl ? (
+              <div className="text-center">
+                <p className="text-xs text-neutral-400 mb-2">扩展结果</p>
+                <img src={finalResultUrl} alt="" className="max-w-2xl max-h-[70vh] rounded-xl shadow-lg" />
+              </div>
+            ) : (
+              <>
+                <div className="border-2 border-dashed border-cyan-300 rounded-xl p-8">
+                  <img src={previewUrl} alt="" className="max-w-xl max-h-[60vh] rounded-lg shadow-lg" />
+                </div>
+                <p className="text-center text-xs text-neutral-400 mt-3">虚线区域为扩展范围</p>
+                {isProcessing && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-xl">
+                    <div className="bg-white/90 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-2">
+                      <Loader2 size={16} className="animate-spin text-cyan-500" />
+                      <span className="text-sm text-neutral-700">AI 扩展中...</span>
+                    </div>
+                  </div>
+                )}
+                {errorMsg && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 px-4 py-2 rounded-xl flex items-center gap-2">
+                    <AlertCircle size={14} className="text-red-500" />
+                    <span className="text-xs text-red-600">{errorMsg}</span>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         ) : (
-          <label className="flex flex-col items-center gap-4 p-16 rounded-2xl border-2 border-dashed border-neutral-200 hover:border-cyan-300 bg-white cursor-pointer transition-colors">
-            <div className="w-16 h-16 rounded-2xl bg-cyan-50 flex items-center justify-center">
-              <Upload size={28} className="text-cyan-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-medium text-neutral-900">上传图片，AI 延展画面</p>
-              <p className="text-xs text-neutral-400 mt-1">智能生成超出画面边界的内容</p>
-            </div>
-            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-          </label>
+          <ImageUploader
+            onFileSelect={handleFileSelect}
+            accentColor="cyan"
+            hint="上传图片，AI 延展画面"
+            subHint="智能生成超出画面边界的内容"
+            className="max-w-md w-full"
+          />
         )}
       </div>
     </div>

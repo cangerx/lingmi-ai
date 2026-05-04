@@ -12,6 +12,7 @@ type Config struct {
 	Redis    RedisConfig    `mapstructure:"redis"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	Storage  StorageConfig  `mapstructure:"storage"`
+	Payment  PaymentConfig  `mapstructure:"payment"`
 }
 
 type ServerConfig struct {
@@ -54,6 +55,29 @@ type StorageConfig struct {
 	} `mapstructure:"local"`
 }
 
+type PaymentConfig struct {
+	Mock   bool          `mapstructure:"mock"`
+	Wechat WechatConfig  `mapstructure:"wechat"`
+	Alipay AlipayConfig  `mapstructure:"alipay"`
+}
+
+type WechatConfig struct {
+	AppID          string `mapstructure:"app_id"`
+	MchID          string `mapstructure:"mch_id"`
+	APIKeyV3       string `mapstructure:"api_key_v3"`
+	SerialNo       string `mapstructure:"serial_no"`
+	PrivateKeyPath string `mapstructure:"private_key_path"`
+	NotifyURL      string `mapstructure:"notify_url"`
+}
+
+type AlipayConfig struct {
+	AppID      string `mapstructure:"app_id"`
+	PrivateKey string `mapstructure:"private_key"`
+	PublicKey  string `mapstructure:"public_key"`
+	NotifyURL  string `mapstructure:"notify_url"`
+	Sandbox    bool   `mapstructure:"sandbox"`
+}
+
 func Load() (*Config, error) {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -70,6 +94,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("jwt.expire_hour", 72)
 	viper.SetDefault("storage.driver", "local")
 	viper.SetDefault("storage.local.dir", "./uploads")
+	viper.SetDefault("payment.mock", true)
 
 	viper.AutomaticEnv()
 

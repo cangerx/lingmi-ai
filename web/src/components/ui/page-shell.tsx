@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useSiteConfigStore } from "@/store/site-config";
 
 interface PageHeaderProps {
   title: string;
@@ -11,6 +13,13 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ title, description, icon, actions, className }: PageHeaderProps) {
+  const siteName = useSiteConfigStore((s) => s.config.site_name);
+
+  useEffect(() => {
+    document.title = `${title} | ${siteName || "灵秘 AI"}`;
+    return () => { document.title = siteName || "灵秘 AI - 智能创作平台"; };
+  }, [title, siteName]);
+
   return (
     <div className={cn("px-6 py-4 border-b border-neutral-100 bg-white/80 backdrop-blur-sm", className)}>
       <div className="flex items-center justify-between">

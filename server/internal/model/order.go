@@ -37,7 +37,9 @@ type Package struct {
 type RedeemCode struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
 	Code      string     `gorm:"size:50;uniqueIndex" json:"code"`
+	Type      string     `gorm:"size:20;default:credits" json:"type"` // credits, package
 	Credits   float64    `json:"credits"`
+	PackageID *uint      `json:"package_id"`
 	Prefix    string     `gorm:"size:10" json:"prefix"`
 	Status    string     `gorm:"size:20;default:unused" json:"status"` // unused, used, expired, disabled
 	MaxUses   int        `gorm:"default:1" json:"max_uses"`

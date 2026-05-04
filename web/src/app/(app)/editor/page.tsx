@@ -98,7 +98,13 @@ export default function EditorPage() {
                 </>
               )}
               {activeTool !== "调整" && (
-                <p className="text-xs text-neutral-400 py-4 text-center">选择工具后在画布上操作</p>
+                <div className="py-4 text-center space-y-2">
+                  <p className="text-xs text-neutral-400">选择工具后在画布上操作</p>
+                  <div className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-100">
+                    <p className="text-[11px] text-amber-600 font-medium">🚧 功能开发中</p>
+                    <p className="text-[10px] text-amber-500 mt-0.5">编辑工具即将上线</p>
+                  </div>
+                </div>
               )}
             </div>
           </div>

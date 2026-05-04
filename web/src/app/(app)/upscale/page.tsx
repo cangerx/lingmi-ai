@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Upload, Download, ArrowLeftRight, Loader2 } from "lucide-react";
+import { Sparkles, Download, ArrowLeftRight, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { imageAPI } from "@/lib/api";
+import ImageUploader from "@/components/ui/image-uploader";
+import { downloadImage } from "@/lib/download";
+import { usePollGeneration } from "@/hooks/use-poll-generation";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const SCALES = [
   { label: "2x", desc: "2 倍放大" },
@@ -13,29 +17,47 @@ const SCALES = [
 ];
 
 export default function UpscalePage() {
+  usePageTitle("变清晰");
   const [previewUrl, setPreviewUrl] = useState("");
   const [scale, setScale] = useState("2x");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [resultUrl, setResultUrl] = useState("");
+  const { result: pollResult, polling, error: pollError, startPolling } = usePollGeneration();
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setUploadedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
+  const finalResultUrl = pollResult?.status === "completed" ? pollResult.result_url || "" : resultUrl;
+  const isProcessing = processing || polling;
+  const errorMsg = pollError || (pollResult?.status === "failed" ? pollResult.error_msg : null);
+
+  const handleFileSelect = (file: File, url: string) => {
+    setUploadedFile(file);
+    setPreviewUrl(url);
+    setResultUrl("");
   };
 
   const handleUpscale = async () => {
     if (!uploadedFile) return;
     setProcessing(true);
+    setResultUrl("");
     try {
       const fd = new FormData();
       fd.append("image", uploadedFile);
       fd.append("scale", scale.replace('x', ''));
-      await imageAPI.upscale(fd);
-    } catch (e) { console.error(e); }
-    setProcessing(false);
+      const res = await imageAPI.upscale(fd);
+      const gen = res.data?.data;
+      if (gen?.result_url) {
+        setResultUrl(gen.result_url);
+        setProcessing(false);
+      } else if (gen?.id) {
+        setProcessing(false);
+        startPolling(gen.id);
+      } else {
+        setProcessing(false);
+      }
+    } catch (e: any) {
+      console.error(e);
+      setProcessing(false);
+    }
   };
 
   return (
@@ -64,10 +86,14 @@ export default function UpscalePage() {
                 </button>
               ))}
             </div>
-            <button onClick={handleUpscale} disabled={processing} className="px-3 py-1.5 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors flex items-center gap-1.5">
-              {processing ? <><Loader2 size={14} className="animate-spin" /> 处理中</> : <><Sparkles size={14} /> 增强</>}
+            <button onClick={handleUpscale} disabled={isProcessing} className="px-3 py-1.5 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors flex items-center gap-1.5">
+              {isProcessing ? <><Loader2 size={14} className="animate-spin" /> 处理中...</> : <><Sparkles size={14} /> 增强</>}
             </button>
-            <button className="px-3 py-1.5 rounded-lg border border-neutral-200/60 text-sm text-neutral-600 hover:bg-neutral-50 transition-colors flex items-center gap-1.5">
+            <button
+              onClick={() => finalResultUrl && downloadImage(finalResultUrl, `upscale-${scale}.png`)}
+              disabled={!finalResultUrl}
+              className="px-3 py-1.5 rounded-lg border border-neutral-200/60 text-sm text-neutral-600 hover:bg-neutral-50 disabled:opacity-40 transition-colors flex items-center gap-1.5"
+            >
               <Download size={14} /> 下载
             </button>
           </div>
@@ -84,25 +110,38 @@ export default function UpscalePage() {
             <ArrowLeftRight size={20} className="text-neutral-300 shrink-0" />
             <div className="text-center">
               <p className="text-xs text-neutral-400 mb-2">增强后 ({scale})</p>
-              <div className="max-w-md max-h-[60vh] rounded-2xl border border-neutral-200/60 bg-white flex items-center justify-center aspect-square shadow-sm">
-                <div className="text-center">
-                  <Sparkles size={24} className="mx-auto text-amber-300 mb-2" />
-                  <p className="text-xs text-neutral-300">点击增强按钮开始</p>
+              {finalResultUrl ? (
+                <img src={finalResultUrl} alt="" className="max-w-md max-h-[60vh] rounded-2xl border border-neutral-200/60 shadow-sm" />
+              ) : (
+                <div className="max-w-md max-h-[60vh] rounded-2xl border border-neutral-200/60 bg-white flex items-center justify-center aspect-square shadow-sm relative">
+                  {isProcessing ? (
+                    <div className="text-center">
+                      <Loader2 size={24} className="mx-auto text-amber-400 animate-spin mb-2" />
+                      <p className="text-xs text-neutral-400">AI 增强中...</p>
+                    </div>
+                  ) : errorMsg ? (
+                    <div className="text-center px-4">
+                      <AlertCircle size={24} className="mx-auto text-red-400 mb-2" />
+                      <p className="text-xs text-red-500">{errorMsg}</p>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <Sparkles size={24} className="mx-auto text-amber-300 mb-2" />
+                      <p className="text-xs text-neutral-300">点击增强按钮开始</p>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
           </div>
         ) : (
-          <label className="flex flex-col items-center gap-4 p-16 rounded-2xl border-2 border-dashed border-neutral-200 hover:border-amber-300 bg-white cursor-pointer transition-colors">
-            <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center">
-              <Upload size={28} className="text-amber-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-medium text-neutral-900">上传图片，AI 智能增强画质</p>
-              <p className="text-xs text-neutral-400 mt-1">告别模糊，最高 8 倍无损放大</p>
-            </div>
-            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-          </label>
+          <ImageUploader
+            onFileSelect={handleFileSelect}
+            accentColor="amber"
+            hint="上传图片，AI 智能增强画质"
+            subHint="告别模糊，最高 8 倍无损放大"
+            className="max-w-md w-full"
+          />
         )}
       </div>
     </div>

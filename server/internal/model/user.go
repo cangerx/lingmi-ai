@@ -34,6 +34,18 @@ type UserCredits struct {
 	TotalConsumed  float64 `gorm:"default:0" json:"total_consumed"`
 }
 
+// UserOAuthBinding stores third-party OAuth bindings (one user can have multiple)
+type UserOAuthBinding struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	UserID    uint      `gorm:"index" json:"user_id"`
+	Provider  string    `gorm:"size:20;index" json:"provider"` // wechat, weibo, qq
+	OpenID    string    `gorm:"size:200" json:"open_id"`
+	UnionID   string    `gorm:"size:200" json:"union_id"`
+	Nickname  string    `gorm:"size:100" json:"nickname"`
+	Avatar    string    `gorm:"size:500" json:"avatar"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type CreditLog struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	UserID    uint      `gorm:"index" json:"user_id"`

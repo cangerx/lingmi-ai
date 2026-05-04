@@ -1,0 +1,42 @@
+server:
+  port: "8080"
+  mode: debug
+
+database:
+  host: localhost
+  port: "5432"
+  user: lingmiai
+  password: M4CAbd7TsR58EjH4
+  dbname: lingmiai
+  sslmode: disable
+
+redis:
+  addr: 127.0.0.1:6379
+  password: ""
+  db: 0
+
+jwt:
+  secret: lingmiai-jwt-secret-change-in-production
+  expire_hour: 72
+
+storage:
+  driver: local
+  local:
+    dir: ./uploads
+    domain: http://localhost:8080
+
+payment:
+  mock: true
+  wechat:
+    app_id: ""
+    mch_id: ""
+    api_key_v3: ""
+    serial_no: ""
+    private_key_path: ""
+    notify_url: "http://localhost:8080/api/v1/payment/wechat/notify"
+  alipay:
+    app_id: ""
+    private_key: ""
+    public_key: ""
+    notify_url: "http://localhost:8080/api/v1/payment/alipay/notify"
+    sandbox: true

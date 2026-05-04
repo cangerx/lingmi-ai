@@ -3,9 +3,12 @@ package main
 import (
 	"log"
 
+	"github.com/lingmiai/server/internal/cache"
 	"github.com/lingmiai/server/internal/config"
 	"github.com/lingmiai/server/internal/database"
+	"github.com/lingmiai/server/internal/handler"
 	"github.com/lingmiai/server/internal/router"
+	"github.com/lingmiai/server/internal/service"
 )
 
 func main() {
@@ -21,10 +24,19 @@ func main() {
 		log.Fatalf("Failed to connect database: %v", err)
 	}
 
+	// Connect Redis
+	cache.Connect(&cfg.Redis)
+
 	// Auto migrate
 	if err := database.AutoMigrate(db); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
+
+	// Seed default settings
+	handler.SeedAllSettings(db)
+
+	// Background workers
+	service.StartOrderExpireWorker(db)
 
 	// Setup router
 	r := router.Setup(cfg, db)

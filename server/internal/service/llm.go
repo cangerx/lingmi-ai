@@ -110,15 +110,22 @@ func (s *LLMService) ChatCompletion(channel *model.Channel, req *ChatRequest) (*
 	return &result, nil
 }
 
-// StreamChatCompletion sends a streaming SSE request and writes chunks to the writer
-func (s *LLMService) StreamChatCompletion(channel *model.Channel, req *ChatRequest, w http.ResponseWriter, flusher http.Flusher) error {
+// StreamResult holds the collected content and usage from a streaming response
+type StreamResult struct {
+	Content    string
+	TotalTokens int
+}
+
+// StreamChatCompletion sends a streaming SSE request and writes chunks to the writer.
+// Returns collected content and estimated token usage.
+func (s *LLMService) StreamChatCompletion(channel *model.Channel, req *ChatRequest, w http.ResponseWriter, flusher http.Flusher) (*StreamResult, error) {
 	req.Stream = true
 	body, _ := json.Marshal(req)
 
 	url := strings.TrimRight(channel.BaseURL, "/") + "/v1/chat/completions"
 	httpReq, err := http.NewRequest("POST", url, bytes.NewReader(body))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+channel.APIKey)
@@ -126,13 +133,13 @@ func (s *LLMService) StreamChatCompletion(channel *model.Channel, req *ChatReque
 	client := &http.Client{Timeout: time.Duration(channel.Timeout) * time.Second}
 	resp, err := client.Do(httpReq)
 	if err != nil {
-		return fmt.Errorf("upstream request: %w", err)
+		return nil, fmt.Errorf("upstream request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("upstream error %d: %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("upstream error %d: %s", resp.StatusCode, string(respBody))
 	}
 
 	// Set SSE headers
@@ -140,6 +147,7 @@ func (s *LLMService) StreamChatCompletion(channel *model.Channel, req *ChatReque
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
+	var contentBuilder strings.Builder
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -154,7 +162,36 @@ func (s *LLMService) StreamChatCompletion(channel *model.Channel, req *ChatReque
 		if strings.Contains(line, "[DONE]") {
 			break
 		}
+
+		// Collect delta content
+		if strings.HasPrefix(line, "data: ") {
+			data := strings.TrimPrefix(line, "data: ")
+			var chunk struct {
+				Choices []struct {
+					Delta struct {
+						Content string `json:"content"`
+					} `json:"delta"`
+				} `json:"choices"`
+				Usage *ChatCompletionUsage `json:"usage,omitempty"`
+			}
+			if json.Unmarshal([]byte(data), &chunk) == nil {
+				if len(chunk.Choices) > 0 {
+					contentBuilder.WriteString(chunk.Choices[0].Delta.Content)
+				}
+			}
+		}
 	}
 
-	return scanner.Err()
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	content := contentBuilder.String()
+	// Estimate tokens: ~4 chars per token for CJK, rough estimate
+	estimatedTokens := len(content) / 2
+	if estimatedTokens < 1 {
+		estimatedTokens = 1
+	}
+
+	return &StreamResult{Content: content, TotalTokens: estimatedTokens}, nil
 }
