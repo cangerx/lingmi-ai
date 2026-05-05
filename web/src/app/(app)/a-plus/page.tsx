@@ -167,10 +167,10 @@ export default function APlusPage() {
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full md:w-[380px] border-b md:border-b-0 md:border-r border-neutral-100 bg-white/80 backdrop-blur-sm flex flex-col shrink-0 max-h-[50vh] md:max-h-none"
+        className="w-full md:w-[380px] border-b md:border-b-0 md:border-r border-neutral-100 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm flex flex-col shrink-0 max-h-[50vh] md:max-h-none"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100/60">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100/60 dark:border-neutral-800/60">
           <motion.div
             whileHover={{ scale: 1.1, rotate: 5 }}
             className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md shadow-purple-200/40"
@@ -367,7 +367,7 @@ export default function APlusPage() {
         </div>
 
         {/* Generate button */}
-        <div className="p-5 border-t border-neutral-100/60">
+        <div className="p-5 border-t border-neutral-100/60 dark:border-neutral-800/60">
           <motion.button
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
@@ -389,7 +389,7 @@ export default function APlusPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.15 }}
-        className="flex-1 overflow-y-auto bg-[#fafafa]"
+        className="flex-1 overflow-y-auto bg-[#fafafa] dark:bg-[#0A0A0A]"
       >
         {results.length > 0 ? (
           <div className="p-6 space-y-4">

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { Sparkles, User, Home, LayoutGrid, LayoutTemplate, Clock, FolderOpen } from "lucide-react";
+import { Sparkles, User, Home, LayoutGrid, Compass, HardDrive, FolderOpen } from "lucide-react";
 import Sidebar from "@/components/sidebar";
 import NotificationBanner from "@/components/notification-banner";
 import LoginModal from "@/components/login-modal";
@@ -14,16 +14,16 @@ import { cn } from "@/lib/utils";
 
 const mobileNavItems = [
   { label: "首页", href: "/", icon: Home },
+  { label: "灵感", href: "/inspiration", icon: Compass },
   { label: "工具", href: "/tools", icon: LayoutGrid },
-  { label: "模板", href: "/templates", icon: LayoutTemplate },
-  { label: "最近", href: "/recent", icon: Clock },
-  { label: "项目", href: "/projects", icon: FolderOpen },
+  { label: "素材", href: "/assets", icon: HardDrive },
+  { label: "作品", href: "/projects", icon: FolderOpen },
 ];
 
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
   enter: { opacity: 1, y: 0, transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] as const } },
-  exit: { opacity: 0, y: -6, transition: { duration: 0.2, ease: "easeIn" as const } },
+  exit: { opacity: 0, y: -4, transition: { duration: 0.15, ease: "easeIn" as const } },
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -53,45 +53,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [searchParams, openLoginModal]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#fafafa]">
+    <div className="flex h-screen overflow-hidden bg-[#fafafa] dark:bg-[#0A0A0A]">
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden relative">
-        {/* Floating top-right actions (hidden on pages with own header) */}
-        <div className={cn("absolute top-3 right-5 z-30 flex items-center gap-2.5", pathname === "/referral" && "hidden")}>
-          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-            <Link
-              href="/pricing"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-pink-400 animate-gradient text-white text-xs font-medium shadow-sm shadow-orange-200/50"
-            >
-              <Sparkles size={12} />
-              <span>{credits ? `${credits.balance.toFixed(0)} 积分` : "开通会员"}</span>
-            </Link>
-          </motion.div>
-          {user ? (
-            <Link href="/settings">
-              <motion.div
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-8 h-8 rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center overflow-hidden ring-2 ring-white/60 shadow-sm"
-              >
-                {user.avatar ? (
-                  <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
-                ) : (
-                  <User size={15} className="text-neutral-400" />
-                )}
-              </motion.div>
-            </Link>
-          ) : (
+        {/* Floating top-right: only show login when NOT logged in */}
+        {!user && (
+          <div className={cn("absolute top-3 right-5 z-30 flex items-center gap-2.5", pathname === "/referral" && "hidden")}>
             <motion.div
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
               onClick={openLoginModal}
-              className="w-8 h-8 rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center overflow-hidden ring-2 ring-white/60 shadow-sm cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-medium shadow-sm cursor-pointer hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
             >
-              <User size={15} className="text-neutral-400" />
+              <User size={13} />
+              <span>登录 / 注册</span>
             </motion.div>
-          )}
-        </div>
+          </div>
+        )}
         <NotificationBanner />
         <AnimatePresence mode="wait">
           <motion.main
@@ -108,7 +86,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-neutral-200/40 flex items-center justify-around px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-lg border-t border-neutral-200/40 dark:border-neutral-800/40 flex items-center justify-around px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
         {mobileNavItems.map((item) => {
           const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           const Icon = item.icon;

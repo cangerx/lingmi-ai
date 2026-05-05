@@ -111,9 +111,9 @@ function VideoContent() {
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
-        className="w-full md:w-[360px] border-b md:border-b-0 md:border-r border-neutral-100 bg-white/80 backdrop-blur-sm flex flex-col shrink-0 max-h-[50vh] md:max-h-none"
+        className="w-full md:w-[360px] border-b md:border-b-0 md:border-r border-neutral-100 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm flex flex-col shrink-0 max-h-[50vh] md:max-h-none"
       >
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100/60">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100/60 dark:border-neutral-800/60">
           <motion.div
             whileHover={{ scale: 1.1, rotate: 5 }}
             className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-md shadow-red-200/50"

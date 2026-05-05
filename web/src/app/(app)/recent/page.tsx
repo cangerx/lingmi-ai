@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Clock, Loader2, User, Image as ImageIcon, AlertCircle } from "lucide-react";
+import { Clock, Loader2, User, Image as ImageIcon, AlertCircle, Pencil, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generationAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
@@ -72,8 +72,8 @@ export default function RecentPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#fafafa]">
-      <div className="px-6 pt-5 pb-3 bg-white/80 backdrop-blur-sm border-b border-neutral-100/60">
+    <div className="flex-1 flex flex-col h-full bg-[#fafafa] dark:bg-[#0A0A0A]">
+      <div className="px-6 pt-5 pb-3 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm border-b border-neutral-100/60 dark:border-neutral-800/60">
         <div className="flex items-center gap-2.5">
           <Clock size={18} className="text-neutral-500" />
           <h1 className="text-base font-semibold text-neutral-900">最近打开</h1>
@@ -99,25 +99,31 @@ export default function RecentPage() {
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
-                <Link
-                  href="/assets"
-                  className="group relative rounded-xl overflow-hidden bg-white border border-neutral-200/60 shadow-sm hover:shadow-md transition-all block"
-                >
+                <div className="group relative rounded-xl overflow-hidden bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm hover:shadow-md transition-all">
                   {item.status === "failed" ? (
-                    <div className="w-full aspect-square bg-red-50 flex flex-col items-center justify-center gap-1">
+                    <div className="w-full aspect-square bg-red-50 dark:bg-red-900/10 flex flex-col items-center justify-center gap-1">
                       <AlertCircle size={20} className="text-red-300" />
                       <p className="text-[10px] text-red-400">生成失败</p>
                     </div>
                   ) : item.result_url ? (
                     <img src={item.result_url} alt="" className="w-full aspect-square object-cover" loading="lazy" />
                   ) : (
-                    <div className="w-full aspect-square bg-neutral-50 flex items-center justify-center">
+                    <div className="w-full aspect-square bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center">
                       <Loader2 size={20} className="text-blue-300 animate-spin" />
                     </div>
                   )}
                   {item.status === "completed" && (
                     <>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Link
+                          href={`/generate?prompt=${encodeURIComponent(item.prompt || "")}&image=${encodeURIComponent(item.result_url || "")}`}
+                          className="p-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 transition-colors"
+                          title="编辑"
+                        >
+                          <Pencil size={12} />
+                        </Link>
+                      </div>
                       <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <p className="text-[10px] text-white/90 line-clamp-1">{item.prompt || "—"}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
@@ -131,7 +137,7 @@ export default function RecentPage() {
                       </div>
                     </>
                   )}
-                </Link>
+                </div>
               </motion.div>
             ))}
           </div>

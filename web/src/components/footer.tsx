@@ -50,7 +50,7 @@ export default function Footer() {
   const { config } = useSiteConfigStore();
 
   return (
-    <footer className="border-t border-neutral-100 bg-white">
+    <footer className="border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900">
       {/* Link columns */}
       <div className="max-w-6xl mx-auto px-6 pt-10 pb-8">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8">

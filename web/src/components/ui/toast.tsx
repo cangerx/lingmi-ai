@@ -47,9 +47,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   };
 
   const bgColors = {
-    success: "bg-emerald-50 border-emerald-200/60",
-    error: "bg-red-50 border-red-200/60",
-    info: "bg-blue-50 border-blue-200/60",
+    success: "bg-emerald-50 dark:bg-emerald-950/80 border-emerald-200/60 dark:border-emerald-800/60",
+    error: "bg-red-50 dark:bg-red-950/80 border-red-200/60 dark:border-red-800/60",
+    info: "bg-blue-50 dark:bg-blue-950/80 border-blue-200/60 dark:border-blue-800/60",
   };
 
   return (
@@ -70,7 +70,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               )}
             >
               {icons[t.type]}
-              <span className="flex-1 text-sm text-neutral-800">{t.message}</span>
+              <span className="flex-1 text-sm text-neutral-800 dark:text-neutral-200">{t.message}</span>
               <button
                 onClick={() => dismiss(t.id)}
                 className="shrink-0 p-0.5 rounded hover:bg-black/5 transition-colors"

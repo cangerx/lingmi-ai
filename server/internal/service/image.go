@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -49,6 +50,22 @@ type ImageData struct {
 	URL           string `json:"url,omitempty"`
 	B64JSON       string `json:"b64_json,omitempty"`
 	RevisedPrompt string `json:"revised_prompt,omitempty"`
+}
+
+// snapSizeTo16 ensures both dimensions in a "WxH" size string are divisible by 16.
+func snapSizeTo16(size string) string {
+	parts := strings.SplitN(size, "x", 2)
+	if len(parts) != 2 {
+		return size
+	}
+	w, err1 := strconv.Atoi(parts[0])
+	h, err2 := strconv.Atoi(parts[1])
+	if err1 != nil || err2 != nil || w <= 0 || h <= 0 {
+		return size
+	}
+	w = (w + 8) / 16 * 16
+	h = (h + 8) / 16 * 16
+	return fmt.Sprintf("%dx%d", w, h)
 }
 
 // ImageService handles AI image generation
@@ -97,6 +114,7 @@ func (s *ImageService) Generate(channel *model.Channel, req *ImageGenerationRequ
 	if req.Size == "" {
 		req.Size = "1024x1024"
 	}
+	req.Size = snapSizeTo16(req.Size)
 
 	body, _ := json.Marshal(req)
 
@@ -164,7 +182,7 @@ func (s *ImageService) Edit(channel *model.Channel, req *ImageEditRequest) (*Ima
 		writer.WriteField("model", req.Model)
 	}
 	if req.Size != "" {
-		writer.WriteField("size", req.Size)
+		writer.WriteField("size", snapSizeTo16(req.Size))
 	}
 	writer.WriteField("response_format", "b64_json")
 	if req.N > 0 {

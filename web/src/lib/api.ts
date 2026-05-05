@@ -165,21 +165,24 @@ export const generationAPI = {
   delete: (id: number) => api.delete(`/generations/${id}`),
 };
 
-// Project API
-export const projectAPI = {
-  list: (params?: { page?: number; page_size?: number }) =>
-    api.get("/projects", { params }),
-  get: (id: number) => api.get(`/projects/${id}`),
-  create: (data: { name: string; type: string }) =>
-    api.post("/projects", data),
-  delete: (id: number) => api.delete(`/projects/${id}`),
-};
-
-// Template API
-export const templateAPI = {
-  list: (params?: { category?: string; page?: number; page_size?: number }) =>
-    api.get("/templates", { params }),
-  get: (id: number) => api.get(`/templates/${id}`),
+// Space API (user asset space)
+export const spaceAPI = {
+  quota: () => api.get("/space/quota"),
+  listFolders: () => api.get("/space/folders"),
+  createFolder: (name: string) => api.post("/space/folders", { name }),
+  renameFolder: (id: number, name: string) => api.put(`/space/folders/${id}`, { name }),
+  deleteFolder: (id: number) => api.delete(`/space/folders/${id}`),
+  listFiles: (params?: { folder_id?: string; page?: number; page_size?: number }) =>
+    api.get("/space/files", { params }),
+  uploadFile: (file: File, folderId?: number) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (folderId) fd.append("folder_id", String(folderId));
+    return api.post("/space/files", fd, { headers: { "Content-Type": "multipart/form-data" }, timeout: 60000 });
+  },
+  moveFile: (id: number, folderId: number | null) => api.put(`/space/files/${id}`, { folder_id: folderId || 0 }),
+  renameFile: (id: number, name: string) => api.put(`/space/files/${id}`, { name }),
+  deleteFile: (id: number) => api.delete(`/space/files/${id}`),
 };
 
 // Video API
@@ -204,4 +207,15 @@ export const inspirationAPI = {
   tags: () => api.get("/inspirations/tags"),
   publish: (data: { generation_id: number; title?: string; description?: string; tag?: string }) =>
     api.post("/inspirations/publish", data),
+};
+
+// Template API
+export const templateAPI = {
+  list: (params?: {
+    page?: number; page_size?: number;
+    category?: string; scene?: string; usage?: string;
+    industry?: string; style?: string; color?: string;
+    layout?: string; search?: string; sort_by?: string;
+  }) => api.get("/templates", { params }),
+  filters: () => api.get("/templates/filters"),
 };

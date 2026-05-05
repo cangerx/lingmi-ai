@@ -57,7 +57,7 @@ export default function EraserPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.35 }} className="flex items-center justify-between px-6 py-3 border-b border-neutral-100 glass">
+      <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.35 }} className="flex items-center justify-between px-6 py-3 border-b border-neutral-100 dark:border-neutral-800 glass">
         <div className="flex items-center gap-3">
           <motion.div whileHover={{ scale: 1.1, rotate: 5 }} className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-md shadow-orange-200/50">
             <Eraser size={16} className="text-white" />

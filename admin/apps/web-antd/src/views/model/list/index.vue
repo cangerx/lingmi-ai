@@ -49,6 +49,8 @@ const columns = [
   { title: 'ID', dataIndex: 'id', width: 50 },
   { title: '模型名称', dataIndex: 'name', width: 200, ellipsis: true },
   { title: '显示名称', dataIndex: 'display_name', width: 140 },
+  { title: '标记', key: 'badge', width: 80 },
+  { title: '描述', dataIndex: 'description', width: 200, ellipsis: true },
   { title: '类型', dataIndex: 'type', width: 80, key: 'type' },
   { title: '渠道', key: 'channels', width: 180 },
   { title: '价格(输入/输出)', key: 'price', width: 140 },
@@ -80,6 +82,11 @@ const form = reactive({
   display_name: '',
   type: 'chat',
   provider: '',
+  description: '',
+  badge: '',
+  tags: '' as string | string[],
+  icon: '',
+  vip_only: false,
   price_input: 0,
   price_output: 0,
   price_per_call: 0,
@@ -113,6 +120,7 @@ function openCreateModal() {
   editingId.value = null;
   Object.assign(form, {
     name: '', display_name: '', type: 'chat', provider: '',
+    description: '', badge: '', tags: '', icon: '', vip_only: false,
     price_input: 0, price_output: 0, price_per_call: 0,
     pricing_mode: 'per_token', sort: 0, status: 'active',
   });
@@ -144,11 +152,17 @@ async function handleBatchCreate() {
 
 function openEditModal(record: any) {
   editingId.value = record.id;
+  const tags = Array.isArray(record.tags) ? record.tags.join(', ') : (record.tags || '');
   Object.assign(form, {
     name: record.name,
     display_name: record.display_name,
     type: record.type,
     provider: record.provider || '',
+    description: record.description || '',
+    badge: record.badge || '',
+    tags,
+    icon: record.icon || '',
+    vip_only: record.vip_only || false,
     price_input: record.price_input || 0,
     price_output: record.price_output || 0,
     price_per_call: record.price_per_call || 0,
@@ -164,12 +178,17 @@ async function handleSave() {
     message.warning('请填写模型名称');
     return;
   }
+  // Convert tags string to array
+  const payload: any = { ...form };
+  if (typeof payload.tags === 'string') {
+    payload.tags = payload.tags.split(',').map((t: string) => t.trim()).filter(Boolean);
+  }
   try {
     if (editingId.value) {
-      await updateModel(editingId.value, { ...form });
+      await updateModel(editingId.value, payload);
       message.success('更新成功');
     } else {
-      await createModel({ ...form });
+      await createModel(payload);
       message.success('创建成功');
     }
     modalVisible.value = false;
@@ -346,9 +365,16 @@ onMounted(fetchData);
         :pagination="{ pageSize: 50, showSizeChanger: true, showTotal: (t: number) => `共 ${t} 条` }"
         row-key="id"
         size="middle"
-        :scroll="{ x: 1100 }"
+        :scroll="{ x: 1400 }"
       >
         <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'badge'">
+            <Tag v-if="record.badge === 'Hot'" color="red">Hot</Tag>
+            <Tag v-else-if="record.badge === 'New'" color="green">New</Tag>
+            <Tag v-else-if="record.badge === 'Pro'" color="purple">Pro</Tag>
+            <span v-else class="text-gray-300">—</span>
+          </template>
+
           <template v-if="column.key === 'type'">
             <Tag :color="typeColors[record.type] || 'default'">{{ record.type }}</Tag>
           </template>
@@ -454,6 +480,9 @@ onMounted(fetchData);
             <Input v-model:value="form.display_name" placeholder="GPT-4o" />
           </Form.Item>
         </div>
+        <Form.Item label="模型描述">
+          <Input.TextArea v-model:value="form.description" placeholder="模型能力简介，将展示在前端模型选择器中" :rows="3" show-count :maxlength="500" />
+        </Form.Item>
         <div class="grid grid-cols-2 gap-4">
           <Form.Item label="类型">
             <Select v-model:value="form.type">
@@ -468,6 +497,30 @@ onMounted(fetchData);
             <Input v-model:value="form.provider" placeholder="openai" />
           </Form.Item>
         </div>
+        <div class="grid grid-cols-3 gap-4">
+          <Form.Item label="标记徽章">
+            <Select v-model:value="form.badge" allow-clear placeholder="无">
+              <Select.Option value="">无</Select.Option>
+              <Select.Option value="Hot"><Tag color="red">Hot</Tag> 热门</Select.Option>
+              <Select.Option value="New"><Tag color="green">New</Tag> 最新</Select.Option>
+              <Select.Option value="Pro"><Tag color="purple">Pro</Tag> 专业</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="标签（逗号分隔）">
+            <Input v-model:value="form.tags" placeholder="推荐, 高清, 文字渲染" />
+          </Form.Item>
+          <Form.Item label="VIP 专属">
+            <Switch
+              :checked="form.vip_only"
+              checked-children="是"
+              un-checked-children="否"
+              @change="(checked: any) => form.vip_only = !!checked"
+            />
+          </Form.Item>
+        </div>
+        <Form.Item label="图标 URL">
+          <Input v-model:value="form.icon" placeholder="https://..." />
+        </Form.Item>
         <Form.Item label="计费模式">
           <Select v-model:value="form.pricing_mode">
             <Select.Option value="per_token">按 Token</Select.Option>

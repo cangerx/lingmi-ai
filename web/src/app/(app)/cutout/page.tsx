@@ -107,7 +107,7 @@ export default function CutoutPage() {
         initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.35 }}
-        className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 glass shrink-0"
+        className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 glass shrink-0"
       >
         <div className="flex items-center gap-3">
           <motion.div whileHover={{ scale: 1.1, rotate: 5 }} className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-md shadow-emerald-200/50">
@@ -190,7 +190,7 @@ export default function CutoutPage() {
                   animate={{ x: 0, opacity: 1 }}
                   exit={{ x: 40, opacity: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="w-[280px] border-l border-neutral-100 bg-white overflow-y-auto p-5 space-y-6 shrink-0"
+                  className="w-[280px] border-l border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-y-auto p-5 space-y-6 shrink-0"
                 >
                   {/* Background colors */}
                   <div>

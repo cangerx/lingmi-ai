@@ -32,8 +32,8 @@ export default function NotificationBanner() {
     <div className={cn(
       "mx-4 mt-3 px-4 py-2.5 rounded-xl flex items-center gap-3 text-sm animate-in slide-in-from-top-2",
       current.type === "maintenance"
-        ? "bg-amber-50 text-amber-800 border border-amber-200/60"
-        : "bg-blue-50 text-blue-800 border border-blue-200/60"
+        ? "bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 border border-amber-200/60 dark:border-amber-800/40"
+        : "bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-200 border border-blue-200/60 dark:border-blue-800/40"
     )}>
       <Bell size={14} className="shrink-0" />
       <span className="flex-1">

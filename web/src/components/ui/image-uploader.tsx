@@ -103,15 +103,15 @@ export default function ImageUploader({
         className={cn(
           "flex flex-col items-center justify-center gap-3 py-10 rounded-xl border-2 border-dashed cursor-pointer transition-all",
           dragOver
-            ? "border-blue-400 bg-blue-50/50 scale-[1.01]"
-            : cn("border-neutral-200", colors.border, "bg-neutral-50/50")
+            ? "border-blue-400 bg-blue-50/50 dark:bg-blue-950/30 scale-[1.01]"
+            : cn("border-neutral-200 dark:border-neutral-700", colors.border, "bg-neutral-50/50 dark:bg-neutral-800/30")
         )}
       >
         <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center", colors.bg)}>
           <Upload size={24} className={colors.icon} />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium text-neutral-900">{hint}</p>
+          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{hint}</p>
           <p className="text-xs text-neutral-400 mt-1">{subHint}，最大 {maxSizeMB}MB</p>
         </div>
         <input type="file" accept={accept} className="hidden" onChange={handleFileChange} />

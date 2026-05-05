@@ -253,7 +253,7 @@ export default function LoginModal() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 30 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="relative w-full md:w-[90vw] md:max-w-[820px] md:rounded-2xl rounded-t-[20px] bg-white shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[92vh] md:max-h-[85vh]"
+            className="relative w-full md:w-[90vw] md:max-w-[820px] md:rounded-2xl rounded-t-[20px] bg-white dark:bg-neutral-900 shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[92vh] md:max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Mobile drag indicator */}

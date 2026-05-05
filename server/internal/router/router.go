@@ -44,6 +44,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	notifHandler := &handler.NotificationHandler{DB: db}
 	adHandler := &handler.AdHandler{DB: db}
 	modelHandler := &handler.ModelHandler{DB: db}
+	spaceHandler := &handler.SpaceHandler{DB: db, Storage: store}
 
 	// API v1
 	v1 := r.Group("/api/v1")
@@ -76,6 +77,11 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			inspirationHandler := &handler.InspirationHandler{DB: db}
 			public.GET("/inspirations", inspirationHandler.List)
 			public.GET("/inspirations/tags", inspirationHandler.Tags)
+
+			// Templates
+			templateHandler := &handler.TemplateHandler{DB: db}
+			public.GET("/templates", templateHandler.List)
+			public.GET("/templates/filters", templateHandler.Filters)
 		}
 
 		// Settings-driven APIs (no cache, so admin changes take effect immediately)
@@ -144,6 +150,20 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			protected.GET("/generations/:id", imageHandler.GetGeneration)
 			protected.DELETE("/generations/:id", imageHandler.DeleteGeneration)
 			protected.POST("/inspirations/publish", imageHandler.PublishToInspiration)
+
+			// User asset space
+			space := protected.Group("/space")
+			{
+				space.GET("/quota", spaceHandler.GetQuota)
+				space.GET("/folders", spaceHandler.ListFolders)
+				space.POST("/folders", spaceHandler.CreateFolder)
+				space.PUT("/folders/:id", spaceHandler.UpdateFolder)
+				space.DELETE("/folders/:id", spaceHandler.DeleteFolder)
+				space.GET("/files", spaceHandler.ListFiles)
+				space.POST("/files", spaceHandler.UploadFile)
+				space.PUT("/files/:id", spaceHandler.UpdateFile)
+				space.DELETE("/files/:id", spaceHandler.DeleteFile)
+			}
 
 			// Referral
 			referralHandler := &handler.ReferralHandler{DB: db}

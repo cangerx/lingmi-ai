@@ -80,7 +80,7 @@ function ToolCard({ title, desc, href, icon: Icon, gradient }: { title: string; 
     <motion.div variants={fadeUp} whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
       <Link
         href={href}
-        className="group rounded-2xl overflow-hidden border border-neutral-200/60 bg-white/80 hover:shadow-lg hover:border-neutral-200 transition-all block"
+        className="group rounded-2xl overflow-hidden border border-neutral-200/60 dark:border-neutral-800/60 bg-white/80 dark:bg-neutral-900/80 hover:shadow-lg hover:border-neutral-200 dark:hover:border-neutral-700 transition-all block"
       >
         <div className={`aspect-[4/3] bg-gradient-to-br ${gradient} flex items-center justify-center relative overflow-hidden`}>
           <Icon size={28} className="text-neutral-400/30 group-hover:scale-110 transition-transform duration-300" />
@@ -125,12 +125,12 @@ export default function ToolsPage() {
   const isSearching = searchQuery.trim().length > 0;
 
   return (
-    <div className="h-full flex flex-col bg-[#fafafa]">
+    <div className="h-full flex flex-col bg-[#fafafa] dark:bg-[#0A0A0A]">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-neutral-100 bg-white/80 backdrop-blur-sm">
+      <div className="px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/60 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-neutral-800 dark:to-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60 flex items-center justify-center">
               <GridIcon size={16} className="text-neutral-400" />
             </div>
             <h1 className="text-base font-semibold text-neutral-900">工具中心</h1>
@@ -141,7 +141,7 @@ export default function ToolsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索工具..."
-              className="w-full pl-8 pr-4 py-2 rounded-xl border border-neutral-200/60 bg-white/60 text-sm outline-none focus:border-neutral-300 focus:bg-white focus:shadow-sm transition-all"
+              className="w-full pl-8 pr-4 py-2 rounded-xl border border-neutral-200/60 dark:border-neutral-700/60 bg-white/60 dark:bg-neutral-800/60 text-sm outline-none focus:border-neutral-300 dark:focus:border-neutral-600 focus:bg-white dark:focus:bg-neutral-800 focus:shadow-sm transition-all"
             />
           </div>
         </div>

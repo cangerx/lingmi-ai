@@ -97,9 +97,9 @@ function ProductPhotoContent() {
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
-        className="w-full md:w-[340px] border-b md:border-b-0 md:border-r border-neutral-100 bg-white/80 backdrop-blur-sm flex flex-col shrink-0 max-h-[50vh] md:max-h-none"
+        className="w-full md:w-[340px] border-b md:border-b-0 md:border-r border-neutral-100 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm flex flex-col shrink-0 max-h-[50vh] md:max-h-none"
       >
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100/60">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100/60 dark:border-neutral-800/60">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md shadow-blue-200/40">
             <ShoppingBag size={16} className="text-white" />
           </div>
@@ -211,7 +211,7 @@ function ProductPhotoContent() {
           </div>
         </div>
 
-        <div className="p-4 border-t border-neutral-100/60">
+        <div className="p-4 border-t border-neutral-100/60 dark:border-neutral-800/60">
           <button
             disabled={!uploadedFile || generating}
             onClick={doGenerate}
@@ -227,7 +227,7 @@ function ProductPhotoContent() {
       </motion.div>
 
       {/* Right: Result grid */}
-      <div className="flex-1 p-6 overflow-y-auto bg-[#fafafa]">
+      <div className="flex-1 p-6 overflow-y-auto bg-[#fafafa] dark:bg-[#0A0A0A]">
         {results.length > 0 ? (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             {results.map((r: any, i: number) => (

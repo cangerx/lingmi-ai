@@ -1,140 +1,159 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Package,
+  HardDrive,
   User,
   Loader2,
   Download,
-  Share2,
   X,
-  ZoomIn,
-  ZoomOut,
+  Plus,
+  FolderPlus,
+  Folder,
+  Upload,
+  Trash2,
+  Image as ImageIcon,
+  FileText,
+  MoreHorizontal,
+  Pencil,
+  FolderInput,
   ChevronLeft,
   ChevronRight,
-  Image as ImageIcon,
-  Check,
-  Trash2,
-  RotateCcw,
-  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { generationAPI, inspirationAPI } from "@/lib/api";
+import { spaceAPI } from "@/lib/api";
 import { downloadImage } from "@/lib/download";
 import { useAuthStore } from "@/store/auth";
 import { useLoginModalStore } from "@/store/login-modal";
 import { usePageTitle } from "@/hooks/use-page-title";
 
-const TYPE_TABS = [
-  { key: "", label: "全部" },
-  { key: "image", label: "文生图" },
-  { key: "product_photo", label: "商品图" },
-  { key: "poster", label: "海报" },
-  { key: "cutout", label: "抠图" },
-  { key: "eraser", label: "消除" },
-  { key: "expand", label: "扩图" },
-  { key: "upscale", label: "超分" },
-];
-
-interface Generation {
+interface SpaceFolder {
   id: number;
-  type: string;
-  model: string;
-  prompt: string;
-  result_url: string;
-  status: string;
-  error_msg: string;
-  credits_cost: number;
+  name: string;
+  file_count: number;
   created_at: string;
-  params: any;
+}
+
+interface SpaceFile {
+  id: number;
+  folder_id: number | null;
+  name: string;
+  url: string;
+  size: number;
+  mime_type: string;
+  width: number;
+  height: number;
+  created_at: string;
+}
+
+interface Quota {
+  used_bytes: number;
+  max_bytes: number;
+  file_count: number;
+}
+
+function formatBytes(bytes: number) {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
 
 export default function AssetsPage() {
-  usePageTitle("我的资产");
+  usePageTitle("素材空间");
   const user = useAuthStore((s) => s.user);
-  const [items, setItems] = useState<Generation[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [folders, setFolders] = useState<SpaceFolder[]>([]);
+  const [files, setFiles] = useState<SpaceFile[]>([]);
+  const [quota, setQuota] = useState<Quota>({ used_bytes: 0, max_bytes: 104857600, file_count: 0 });
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [activeFolder, setActiveFolder] = useState<number | null>(null); // null = all files
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [typeFilter, setTypeFilter] = useState("");
-  const [selected, setSelected] = useState<Generation | null>(null);
-  const [zoom, setZoom] = useState(1);
-  const [publishing, setPublishing] = useState(false);
-  const [published, setPublished] = useState(false);
-  const pageSize = 24;
+  const [dragOver, setDragOver] = useState(false);
+  const [selected, setSelected] = useState<SpaceFile | null>(null);
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [contextMenu, setContextMenu] = useState<{ type: "file" | "folder"; id: number; x: number; y: number } | null>(null);
+  const [renaming, setRenaming] = useState<{ type: "file" | "folder"; id: number; name: string } | null>(null);
+  const pageSize = 50;
 
-  const fetchItems = useCallback(async () => {
+  // ── Data loading ──
+  const loadQuota = useCallback(async () => {
+    try { const res = await spaceAPI.quota(); setQuota(res.data?.data); } catch {}
+  }, []);
+
+  const loadFolders = useCallback(async () => {
+    try { const res = await spaceAPI.listFolders(); setFolders(res.data?.data ?? []); } catch {}
+  }, []);
+
+  const loadFiles = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await generationAPI.list({
-        page,
-        page_size: pageSize,
-        type: typeFilter || undefined,
-      });
-      setItems(res.data?.data ?? []);
+      const params: any = { page, page_size: pageSize };
+      if (activeFolder !== null) params.folder_id = activeFolder === 0 ? "root" : String(activeFolder);
+      const res = await spaceAPI.listFiles(params);
+      setFiles(res.data?.data ?? []);
       setTotal(res.data?.total ?? 0);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, page, typeFilter]);
+    } catch {} finally { setLoading(false); }
+  }, [user, page, activeFolder]);
 
-  useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+  useEffect(() => { if (user) { loadQuota(); loadFolders(); } }, [user, loadQuota, loadFolders]);
+  useEffect(() => { loadFiles(); }, [loadFiles]);
+  useEffect(() => { setPage(1); }, [activeFolder]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [typeFilter]);
+  // ── Upload ──
+  const handleUpload = async (fileList: FileList | File[]) => {
+    if (uploading) return;
+    setUploading(true);
+    try {
+      for (const f of Array.from(fileList)) {
+        await spaceAPI.uploadFile(f, activeFolder && activeFolder > 0 ? activeFolder : undefined);
+      }
+      loadFiles(); loadQuota(); loadFolders();
+    } catch (e: any) {
+      alert(e?.response?.data?.error || "上传失败");
+    } finally { setUploading(false); }
+  };
+
+  // ── Drag & Drop ──
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setDragOver(false);
+    if (e.dataTransfer.files.length > 0) handleUpload(e.dataTransfer.files);
+  };
+
+  // ── Folder CRUD ──
+  const createFolder = async () => {
+    if (!newFolderName.trim()) return;
+    try { await spaceAPI.createFolder(newFolderName.trim()); loadFolders(); setNewFolderName(""); setShowNewFolder(false); } catch {}
+  };
+
+  const deleteFolder = async (id: number) => {
+    if (!confirm("删除文件夹将同时删除其中所有文件，确定吗？")) return;
+    try { await spaceAPI.deleteFolder(id); loadFolders(); loadQuota(); if (activeFolder === id) { setActiveFolder(null); } loadFiles(); } catch {}
+  };
+
+  const renameItem = async () => {
+    if (!renaming || !renaming.name.trim()) return;
+    try {
+      if (renaming.type === "folder") await spaceAPI.renameFolder(renaming.id, renaming.name.trim());
+      else await spaceAPI.renameFile(renaming.id, renaming.name.trim());
+      loadFolders(); loadFiles(); setRenaming(null);
+    } catch {}
+  };
+
+  // ── File actions ──
+  const deleteFile = async (id: number) => {
+    try { await spaceAPI.deleteFile(id); setFiles((p) => p.filter((f) => f.id !== id)); setTotal((t) => t - 1); loadQuota(); if (selected?.id === id) setSelected(null); } catch {}
+  };
 
   const totalPages = Math.ceil(total / pageSize);
-
-  const openDetail = (item: Generation) => {
-    setSelected(item);
-    setZoom(1);
-    setPublished(false);
-  };
-
-  const handlePublish = async () => {
-    if (!selected || publishing) return;
-    setPublishing(true);
-    try {
-      await inspirationAPI.publish({ generation_id: selected.id });
-      setPublished(true);
-    } catch (e: any) {
-      const msg = e?.response?.data?.error;
-      if (msg?.includes("已发布")) {
-        setPublished(true);
-      } else {
-        alert(msg || "发布失败");
-      }
-    } finally {
-      setPublishing(false);
-    }
-  };
-
-  const typeLabel = (t: string) => TYPE_TABS.find((x) => x.key === t)?.label || t;
-
-  const handleDelete = async (id: number) => {
-    try {
-      await generationAPI.delete(id);
-      setItems((prev) => prev.filter((x) => x.id !== id));
-      setTotal((t) => t - 1);
-      if (selected?.id === id) setSelected(null);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleReGenerate = (item: Generation) => {
-    if (item.prompt) {
-      const q = encodeURIComponent(item.prompt);
-      window.location.href = `/generate?prompt=${q}&auto=1`;
-    }
-  };
+  const usagePercent = quota.max_bytes > 0 ? Math.min(100, (quota.used_bytes / quota.max_bytes) * 100) : 0;
 
   if (!user) {
     return (
@@ -144,11 +163,8 @@ export default function AssetsPage() {
             <User size={24} className="text-neutral-400" />
           </div>
           <h3 className="text-sm font-medium text-neutral-600 mb-1">请先登录</h3>
-          <p className="text-xs text-neutral-400 max-w-xs mb-4">登录后可查看和管理你的资产</p>
-          <button
-            onClick={() => useLoginModalStore.getState().openLoginModal()}
-            className="px-6 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors shadow-md"
-          >
+          <p className="text-xs text-neutral-400 max-w-xs mb-4">登录后可使用素材空间</p>
+          <button onClick={() => useLoginModalStore.getState().openLoginModal()} className="px-6 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors shadow-md">
             去登录
           </button>
         </div>
@@ -157,287 +173,247 @@ export default function AssetsPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#fafafa]">
+    <div className="flex-1 flex flex-col h-full bg-[#fafafa] dark:bg-[#0A0A0A]" onClick={() => setContextMenu(null)}>
       {/* Header */}
-      <div className="px-6 pt-5 pb-3 bg-white/80 backdrop-blur-sm border-b border-neutral-100/60">
+      <div className="px-6 pt-5 pb-3 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm border-b border-neutral-100/60 dark:border-neutral-800/60">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5">
-            <Package size={18} className="text-neutral-500" />
-            <h1 className="text-base font-semibold text-neutral-900">我的资产</h1>
-            <span className="text-xs text-neutral-400">{total} 个作品</span>
+            <HardDrive size={18} className="text-neutral-500" />
+            <h1 className="text-base font-semibold text-neutral-900">素材空间</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowNewFolder(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-neutral-600 hover:bg-neutral-100 transition-colors border border-neutral-200/60">
+              <FolderPlus size={13} /> 新建文件夹
+            </button>
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white bg-neutral-900 hover:bg-neutral-800 transition-colors shadow-sm">
+              {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />} 上传文件
+            </button>
+            <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf" className="hidden" onChange={(e) => e.target.files && handleUpload(e.target.files)} />
           </div>
         </div>
-        <div className="flex gap-1">
-          {TYPE_TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setTypeFilter(tab.key)}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs transition-all",
-                typeFilter === tab.key
-                  ? "bg-neutral-900 text-white shadow-sm"
-                  : "text-neutral-500 hover:bg-neutral-100"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* Quota bar */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+            <div className={cn("h-full rounded-full transition-all", usagePercent > 90 ? "bg-red-400" : usagePercent > 70 ? "bg-amber-400" : "bg-blue-400")}
+              style={{ width: `${usagePercent}%` }} />
+          </div>
+          <span className="text-[11px] text-neutral-400 shrink-0">
+            {formatBytes(quota.used_bytes)} / {formatBytes(quota.max_bytes)}
+          </span>
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 size={24} className="text-neutral-300 animate-spin" />
-          </div>
-        ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <ImageIcon size={36} className="text-neutral-200 mb-3" />
-            <p className="text-sm text-neutral-400">暂无生成记录</p>
-            <p className="text-xs text-neutral-300 mt-1">去生成图片后，这里会显示所有作品</p>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-              {items.map((item) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="group relative rounded-xl overflow-hidden bg-white border border-neutral-200/60 shadow-sm hover:shadow-md transition-all cursor-pointer"
-                  onClick={() => openDetail(item)}
-                >
-                  {item.status === "failed" ? (
-                    <div className="w-full aspect-square bg-red-50 flex flex-col items-center justify-center gap-2 relative">
-                      <AlertCircle size={24} className="text-red-300" />
-                      <p className="text-[11px] text-red-400 font-medium">生成失败</p>
-                      <p className="text-[10px] text-red-300">已退回积分</p>
-                      <div className="absolute bottom-2 left-2 right-2 flex gap-1.5">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleReGenerate(item); }}
-                          className="flex-1 py-1.5 rounded-lg bg-white/90 text-[10px] text-neutral-600 hover:bg-white flex items-center justify-center gap-1 shadow-sm"
-                        >
-                          <RotateCcw size={10} /> 重新生成
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                          className="py-1.5 px-2.5 rounded-lg bg-white/90 text-[10px] text-red-500 hover:bg-white flex items-center justify-center gap-1 shadow-sm"
-                        >
-                          <Trash2 size={10} />
-                        </button>
-                      </div>
-                    </div>
-                  ) : item.status === "pending" || item.status === "processing" ? (
-                    <div className="w-full aspect-square bg-neutral-50 flex flex-col items-center justify-center gap-2">
-                      <Loader2 size={24} className="text-blue-400 animate-spin" />
-                      <p className="text-[11px] text-neutral-400">生成中...</p>
-                    </div>
-                  ) : item.result_url ? (
-                    <img
-                      src={item.result_url}
-                      alt={item.prompt || ""}
-                      className="w-full aspect-square object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full aspect-square bg-neutral-50 flex items-center justify-center">
-                      <ImageIcon size={24} className="text-neutral-200" />
-                    </div>
-                  )}
-                  {item.status === "completed" && (
-                    <>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <p className="text-[10px] text-white/90 line-clamp-2">{item.prompt || "—"}</p>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/20 text-white/80">
-                            {typeLabel(item.type)}
-                          </span>
-                          <span className="text-[9px] text-white/60">{item.model}</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar - Folders */}
+        <div className="w-48 border-r border-neutral-100/60 bg-white/50 overflow-y-auto shrink-0 hidden md:block">
+          <div className="p-3 space-y-0.5">
+            <button onClick={() => setActiveFolder(null)}
+              className={cn("w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors", activeFolder === null ? "bg-neutral-900 text-white" : "text-neutral-600 hover:bg-neutral-100")}>
+              <HardDrive size={13} /> 全部文件
+            </button>
+            <button onClick={() => setActiveFolder(0)}
+              className={cn("w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors", activeFolder === 0 ? "bg-neutral-900 text-white" : "text-neutral-600 hover:bg-neutral-100")}>
+              <FileText size={13} /> 未分类
+            </button>
+            <div className="h-px bg-neutral-100 my-2" />
+            {folders.map((f) => (
+              <button key={f.id} onClick={() => setActiveFolder(f.id)}
+                onContextMenu={(e) => { e.preventDefault(); setContextMenu({ type: "folder", id: f.id, x: e.clientX, y: e.clientY }); }}
+                className={cn("w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs transition-colors group", activeFolder === f.id ? "bg-neutral-900 text-white" : "text-neutral-600 hover:bg-neutral-100")}>
+                <span className="flex items-center gap-2 truncate"><Folder size={13} /> {f.name}</span>
+                <span className={cn("text-[10px]", activeFolder === f.id ? "text-white/60" : "text-neutral-300")}>{f.file_count}</span>
+              </button>
+            ))}
+            {/* New folder inline */}
+            <AnimatePresence>
+              {showNewFolder && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                  <div className="flex items-center gap-1 px-1 py-1">
+                    <input autoFocus value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && createFolder()}
+                      placeholder="文件夹名称" className="flex-1 px-2 py-1.5 rounded-lg border border-neutral-200 text-xs outline-none focus:border-neutral-400 bg-white" />
+                    <button onClick={createFolder} className="p-1.5 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800"><Plus size={12} /></button>
+                    <button onClick={() => { setShowNewFolder(false); setNewFolderName(""); }} className="p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-400"><X size={12} /></button>
+                  </div>
                 </motion.div>
-              ))}
-            </div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-6">
-                <button
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page <= 1}
-                  className="p-1.5 rounded-lg hover:bg-white disabled:opacity-30 transition-colors"
-                >
-                  <ChevronLeft size={16} className="text-neutral-500" />
+        {/* Main content - Files */}
+        <div className="flex-1 overflow-y-auto"
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}>
+
+          {/* Drag overlay */}
+          <AnimatePresence>
+            {dragOver && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-40 bg-blue-500/10 border-2 border-dashed border-blue-400 flex items-center justify-center pointer-events-none">
+                <div className="bg-white rounded-2xl shadow-lg px-8 py-6 text-center">
+                  <Upload size={32} className="text-blue-400 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-neutral-700">松开即可上传</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="p-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-20"><Loader2 size={24} className="text-neutral-300 animate-spin" /></div>
+            ) : files.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="w-20 h-20 rounded-2xl bg-neutral-100 flex items-center justify-center mb-4">
+                  <Upload size={28} className="text-neutral-300" />
+                </div>
+                <p className="text-sm font-medium text-neutral-500 mb-1">暂无文件</p>
+                <p className="text-xs text-neutral-400 mb-4">上传品牌素材、参考图等资源到你的空间</p>
+                <button onClick={() => fileInputRef.current?.click()} className="px-5 py-2 rounded-xl bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-800 transition-colors flex items-center gap-1.5">
+                  <Upload size={13} /> 上传文件
                 </button>
-                <span className="text-xs text-neutral-500">
-                  {page} / {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  disabled={page >= totalPages}
-                  className="p-1.5 rounded-lg hover:bg-white disabled:opacity-30 transition-colors"
-                >
-                  <ChevronRight size={16} className="text-neutral-500" />
-                </button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                  {files.map((file) => (
+                    <motion.div key={file.id} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
+                      className="group relative rounded-xl overflow-hidden bg-white border border-neutral-200/60 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                      onClick={() => setSelected(file)}
+                      onContextMenu={(e) => { e.preventDefault(); setContextMenu({ type: "file", id: file.id, x: e.clientX, y: e.clientY }); }}>
+                      {file.mime_type?.startsWith("image/") ? (
+                        <img src={file.url} alt={file.name} className="w-full aspect-square object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full aspect-square bg-neutral-50 flex flex-col items-center justify-center gap-2">
+                          <FileText size={28} className="text-neutral-300" />
+                          <span className="text-[10px] text-neutral-400 uppercase">{file.name.split(".").pop()}</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p className="text-[10px] text-white/90 truncate">{file.name}</p>
+                        <p className="text-[9px] text-white/60">{formatBytes(file.size)}</p>
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); setContextMenu({ type: "file", id: file.id, x: e.clientX, y: e.clientY }); }}
+                        className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white">
+                        <MoreHorizontal size={12} className="text-neutral-500" />
+                      </button>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-6">
+                    <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="p-1.5 rounded-lg hover:bg-white disabled:opacity-30 transition-colors">
+                      <ChevronLeft size={16} className="text-neutral-500" />
+                    </button>
+                    <span className="text-xs text-neutral-500">{page} / {totalPages}</span>
+                    <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} className="p-1.5 rounded-lg hover:bg-white disabled:opacity-30 transition-colors">
+                      <ChevronRight size={16} className="text-neutral-500" />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Context menu */}
+      <AnimatePresence>
+        {contextMenu && (
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed z-50 bg-white rounded-xl shadow-lg border border-neutral-200/60 py-1 min-w-[140px]"
+            style={{ left: contextMenu.x, top: contextMenu.y }}>
+            <button onClick={() => { setRenaming({ type: contextMenu.type, id: contextMenu.id, name: "" }); setContextMenu(null); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-neutral-600 hover:bg-neutral-50 transition-colors">
+              <Pencil size={12} /> 重命名
+            </button>
+            {contextMenu.type === "file" && (
+              <button onClick={() => { const f = files.find((x) => x.id === contextMenu.id); if (f) downloadImage(f.url, f.name); setContextMenu(null); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-neutral-600 hover:bg-neutral-50 transition-colors">
+                <Download size={12} /> 下载
+              </button>
+            )}
+            {contextMenu.type === "file" && folders.length > 0 && (
+              <div className="border-t border-neutral-100 pt-1 mt-1">
+                <p className="px-3 py-1 text-[10px] text-neutral-400">移动到</p>
+                {folders.map((f) => (
+                  <button key={f.id} onClick={() => { spaceAPI.moveFile(contextMenu.id, f.id).then(() => { loadFiles(); loadFolders(); }); setContextMenu(null); }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-600 hover:bg-neutral-50 transition-colors">
+                    <FolderInput size={12} /> {f.name}
+                  </button>
+                ))}
               </div>
             )}
-          </>
+            <div className="border-t border-neutral-100 pt-1 mt-1">
+              <button onClick={() => {
+                if (contextMenu.type === "folder") deleteFolder(contextMenu.id);
+                else deleteFile(contextMenu.id);
+                setContextMenu(null);
+              }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50 transition-colors">
+                <Trash2 size={12} /> 删除
+              </button>
+            </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
-      {/* Detail Modal */}
+      {/* Rename dialog */}
+      <AnimatePresence>
+        {renaming && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setRenaming(null)}>
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+              className="bg-white rounded-xl shadow-xl p-5 w-80" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-sm font-semibold text-neutral-900 mb-3">重命名</h3>
+              <input autoFocus value={renaming.name} onChange={(e) => setRenaming({ ...renaming, name: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && renameItem()}
+                placeholder="输入新名称" className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm outline-none focus:border-neutral-400 mb-3" />
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setRenaming(null)} className="px-3 py-1.5 rounded-lg text-xs text-neutral-500 hover:bg-neutral-100">取消</button>
+                <button onClick={renameItem} className="px-3 py-1.5 rounded-lg text-xs text-white bg-neutral-900 hover:bg-neutral-800">确定</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* File preview modal */}
       <AnimatePresence>
         {selected && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => setSelected(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col md:flex-row overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Image area */}
-              <div className="flex-1 bg-neutral-100 flex items-center justify-center p-4 relative min-h-[300px] overflow-hidden">
-                <div
-                  style={{ transform: `scale(${zoom})`, transition: "transform 0.2s" }}
-                  className="max-w-full max-h-full"
-                >
-                  {selected.result_url ? (
-                    <img
-                      src={selected.result_url}
-                      alt=""
-                      className="max-w-full max-h-[70vh] object-contain rounded-lg"
-                      draggable={false}
-                    />
-                  ) : (
-                    <div className="w-64 h-64 bg-neutral-200 rounded-xl flex items-center justify-center">
-                      <ImageIcon size={40} className="text-neutral-300" />
-                    </div>
-                  )}
-                </div>
-                {/* Zoom controls */}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm px-2 py-1">
-                  <button onClick={() => setZoom((z) => Math.max(0.25, z - 0.25))} className="p-1 hover:bg-neutral-100 rounded">
-                    <ZoomOut size={14} className="text-neutral-600" />
-                  </button>
-                  <span className="text-[11px] text-neutral-500 min-w-[40px] text-center">{Math.round(zoom * 100)}%</span>
-                  <button onClick={() => setZoom((z) => Math.min(4, z + 0.25))} className="p-1 hover:bg-neutral-100 rounded">
-                    <ZoomIn size={14} className="text-neutral-600" />
-                  </button>
-                </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setSelected(null)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[85vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b border-neutral-100">
+                <h3 className="text-sm font-semibold text-neutral-900 truncate">{selected.name}</h3>
+                <button onClick={() => setSelected(null)} className="p-1 hover:bg-neutral-100 rounded-lg"><X size={16} className="text-neutral-400" /></button>
               </div>
-
-              {/* Info panel */}
-              <div className="w-full md:w-[300px] border-t md:border-t-0 md:border-l border-neutral-100 flex flex-col">
-                <div className="flex items-center justify-between p-4 border-b border-neutral-100">
-                  <h3 className="text-sm font-semibold text-neutral-900">图片详情</h3>
-                  <button onClick={() => setSelected(null)} className="p-1 hover:bg-neutral-100 rounded-lg transition-colors">
-                    <X size={16} className="text-neutral-400" />
+              <div className="flex-1 overflow-auto bg-neutral-50 flex items-center justify-center p-6">
+                {selected.mime_type?.startsWith("image/") ? (
+                  <img src={selected.url} alt={selected.name} className="max-w-full max-h-[60vh] object-contain rounded-lg" />
+                ) : (
+                  <div className="text-center py-12">
+                    <FileText size={48} className="text-neutral-300 mx-auto mb-3" />
+                    <p className="text-sm text-neutral-500">{selected.name}</p>
+                  </div>
+                )}
+              </div>
+              <div className="p-4 border-t border-neutral-100 flex items-center justify-between">
+                <div className="text-xs text-neutral-400 space-x-3">
+                  <span>{formatBytes(selected.size)}</span>
+                  {selected.width > 0 && <span>{selected.width} x {selected.height}</span>}
+                  <span>{new Date(selected.created_at).toLocaleDateString("zh-CN")}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => deleteFile(selected.id)} className="px-3 py-1.5 rounded-lg text-xs text-red-500 hover:bg-red-50 border border-red-200 flex items-center gap-1.5">
+                    <Trash2 size={12} /> 删除
                   </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {/* Prompt */}
-                  <div>
-                    <label className="block text-[10px] font-medium text-neutral-400 uppercase tracking-wider mb-1">提示词</label>
-                    <p className="text-xs text-neutral-700 leading-relaxed bg-neutral-50 rounded-lg p-2.5">
-                      {selected.prompt || "无提示词"}
-                    </p>
-                  </div>
-
-                  {/* Meta info */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-neutral-50 rounded-lg p-2.5">
-                      <label className="block text-[10px] text-neutral-400 mb-0.5">类型</label>
-                      <p className="text-xs font-medium text-neutral-700">{typeLabel(selected.type)}</p>
-                    </div>
-                    <div className="bg-neutral-50 rounded-lg p-2.5">
-                      <label className="block text-[10px] text-neutral-400 mb-0.5">模型</label>
-                      <p className="text-xs font-medium text-neutral-700">{selected.model}</p>
-                    </div>
-                    <div className="bg-neutral-50 rounded-lg p-2.5">
-                      <label className="block text-[10px] text-neutral-400 mb-0.5">消耗</label>
-                      <p className="text-xs font-medium text-neutral-700">{selected.credits_cost} 积分</p>
-                    </div>
-                    <div className="bg-neutral-50 rounded-lg p-2.5">
-                      <label className="block text-[10px] text-neutral-400 mb-0.5">时间</label>
-                      <p className="text-xs font-medium text-neutral-700">
-                        {new Date(selected.created_at).toLocaleDateString("zh-CN")}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="p-4 border-t border-neutral-100 space-y-2">
-                  {selected.status === "failed" ? (
-                    <>
-                      <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 border border-red-100 mb-2">
-                        <AlertCircle size={14} className="text-red-400 shrink-0" />
-                        <div>
-                          <p className="text-[11px] font-medium text-red-500">生成失败 · 已退回积分</p>
-                          <p className="text-[10px] text-red-400">{selected.error_msg || "未知错误"}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleReGenerate(selected)}
-                        className="w-full py-2 rounded-xl bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-800 transition-colors flex items-center justify-center gap-1.5"
-                      >
-                        <RotateCcw size={13} /> 重新生成
-                      </button>
-                      <button
-                        onClick={() => handleDelete(selected.id)}
-                        className="w-full py-2 rounded-xl bg-red-50 text-red-500 text-xs font-medium border border-red-200 hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5"
-                      >
-                        <Trash2 size={13} /> 删除记录
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => selected.result_url && downloadImage(selected.result_url, `asset-${selected.id}.png`)}
-                        disabled={!selected.result_url}
-                        className="w-full py-2 rounded-xl bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-800 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
-                      >
-                        <Download size={13} /> 下载原图
-                      </button>
-                      <button
-                        onClick={handlePublish}
-                        disabled={publishing || published || !selected.result_url}
-                        className={cn(
-                          "w-full py-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-center gap-1.5",
-                          published
-                            ? "bg-green-50 text-green-600 border border-green-200"
-                            : "bg-violet-50 text-violet-600 border border-violet-200 hover:bg-violet-100"
-                        )}
-                      >
-                        {publishing ? (
-                          <><Loader2 size={13} className="animate-spin" /> 发布中...</>
-                        ) : published ? (
-                          <><Check size={13} /> 已提交审核</>
-                        ) : (
-                          <><Share2 size={13} /> 发布到灵感库</>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(selected.id)}
-                        className="w-full py-2 rounded-xl text-xs font-medium text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"
-                      >
-                        <Trash2 size={13} /> 删除
-                      </button>
-                    </>
-                  )}
+                  <button onClick={() => downloadImage(selected.url, selected.name)} className="px-3 py-1.5 rounded-lg text-xs text-white bg-neutral-900 hover:bg-neutral-800 flex items-center gap-1.5">
+                    <Download size={12} /> 下载
+                  </button>
                 </div>
               </div>
             </motion.div>

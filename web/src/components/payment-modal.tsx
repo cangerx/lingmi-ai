@@ -101,10 +101,10 @@ export default function PaymentModal({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden"
+          className="relative w-full max-w-sm mx-4 bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-neutral-800">
             <h3 className="text-lg font-semibold text-neutral-900">支付订单</h3>
             <button onClick={() => { stopPolling(); onClose(); }} className="p-1 rounded-lg hover:bg-neutral-100 transition-colors">
               <X size={18} className="text-neutral-400" />

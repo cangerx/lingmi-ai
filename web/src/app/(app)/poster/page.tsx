@@ -166,9 +166,9 @@ function PosterContent() {
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
-        className="w-full md:w-[360px] border-b md:border-b-0 md:border-r border-neutral-100 bg-white/80 backdrop-blur-sm flex flex-col shrink-0 max-h-[50vh] md:max-h-none"
+        className="w-full md:w-[360px] border-b md:border-b-0 md:border-r border-neutral-100 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm flex flex-col shrink-0 max-h-[50vh] md:max-h-none"
       >
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100/60">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100/60 dark:border-neutral-800/60">
           <motion.div
             whileHover={{ scale: 1.1, rotate: 5 }}
             whileTap={{ scale: 0.95 }}
@@ -390,12 +390,12 @@ function PosterContent() {
               onChange={(e) => setPrompt(e.target.value)}
               rows={4}
               placeholder="描述你要生成的海报内容，如：双十一电商促销活动，红色主题，大字标题50%off..."
-              className="w-full px-3 py-2.5 rounded-xl border border-neutral-200/60 bg-neutral-50/50 text-sm outline-none focus:border-purple-300 focus:bg-white focus:shadow-sm resize-none transition-all"
+              className="w-full px-3 py-2.5 rounded-xl border border-neutral-200/60 dark:border-neutral-700/60 bg-neutral-50/50 dark:bg-neutral-800/50 text-sm outline-none focus:border-purple-300 focus:bg-white dark:focus:bg-neutral-800 focus:shadow-sm resize-none transition-all"
             />
           </div>
         </div>
 
-        <div className="p-5 border-t border-neutral-100/60">
+        <div className="p-5 border-t border-neutral-100/60 dark:border-neutral-800/60">
           <motion.button
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
@@ -417,7 +417,7 @@ function PosterContent() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.15 }}
-        className="flex-1 p-6 overflow-y-auto bg-[#fafafa]"
+        className="flex-1 p-6 overflow-y-auto bg-[#fafafa] dark:bg-[#0A0A0A]"
       >
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {results.length > 0

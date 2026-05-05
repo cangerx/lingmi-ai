@@ -56,7 +56,7 @@ func (h *ChatHandler) ListConversations(c *gin.Context) {
 	var conversations []model.Conversation
 	h.DB.Where("user_id = ?", userID).Order("pinned DESC, updated_at DESC").Find(&conversations)
 
-	c.JSON(http.StatusOK, conversations)
+	c.JSON(http.StatusOK, gin.H{"data": conversations})
 }
 
 func (h *ChatHandler) CreateConversation(c *gin.Context) {
@@ -198,6 +198,12 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 		return
 	}
 
+	// If client requests a different model, update the conversation
+	if req.Model != "" && req.Model != conv.Model {
+		conv.Model = req.Model
+		h.DB.Model(&conv).Update("model", req.Model)
+	}
+
 	// Save user message
 	userMsg := model.Message{
 		ConversationID: conv.ID,
@@ -323,6 +329,12 @@ func (h *ChatHandler) StreamMessage(c *gin.Context) {
 		return
 	}
 
+	// If client requests a different model, update the conversation
+	if req.Model != "" && req.Model != conv.Model {
+		conv.Model = req.Model
+		h.DB.Model(&conv).Update("model", req.Model)
+	}
+
 	// Save user message
 	userMsg := model.Message{ConversationID: conv.ID, Role: "user", Content: req.Content, Model: conv.Model}
 	h.DB.Create(&userMsg)
@@ -367,7 +379,7 @@ func (h *ChatHandler) StreamMessage(c *gin.Context) {
 	}
 	h.DB.Create(&assistantMsg)
 	h.DB.Model(&conv).Updates(map[string]interface{}{
-		"message_count": gorm.Expr("message_count + 1"),
+		"message_count": gorm.Expr("message_count + 2"),
 	})
 
 	// Deduct credits

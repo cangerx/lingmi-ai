@@ -72,5 +72,9 @@ func AutoMigrate(db *gorm.DB) error {
 		&model.SensitiveWord{},
 		&model.ModerationLog{},
 		&model.Commission{},
+		&model.UserFolder{},
+		&model.UserFile{},
+		&model.UserStorageQuota{},
+		&model.Template{},
 	)
 }

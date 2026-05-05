@@ -284,11 +284,11 @@ func resolveSize(resolution, ratio string) string {
 		h = base
 		w = base * a.w / a.h
 	}
-	// Round to nearest 64
-	w = (w + 32) / 64 * 64
-	h = (h + 32) / 64 * 64
-	if w == 0 { w = 64 }
-	if h == 0 { h = 64 }
+	// Round to nearest multiple of 16 (required by GPT-image API)
+	w = (w + 8) / 16 * 16
+	h = (h + 8) / 16 * 16
+	if w == 0 { w = 16 }
+	if h == 0 { h = 16 }
 
 	return fmt.Sprintf("%dx%d", w, h)
 }
@@ -867,54 +867,72 @@ func (h *ImageHandler) OptimizePrompt(c *gin.Context) {
 		return
 	}
 
-	// Read configured model from settings, fallback to first available chat model
-	modelName := ""
+	// Build candidate model list: configured model first, then all active chat models
+	var candidateModels []string
 	var setting model.SystemSetting
-	if h.DB.Where("setting_group = ? AND setting_key = ?", "prompt", "prompt_optimize_model").First(&setting).Error == nil {
-		modelName = setting.Value
+	if h.DB.Where("setting_group = ? AND setting_key = ?", "prompt", "prompt_optimize_model").First(&setting).Error == nil && setting.Value != "" {
+		candidateModels = append(candidateModels, setting.Value)
 	}
-	if modelName == "" {
-		// Fallback: pick the first active chat model
-		var m model.Model
-		if h.DB.Where("type = ? AND status = ?", "chat", "active").Order("sort ASC, id ASC").First(&m).Error == nil {
-			modelName = m.Name
+	var chatModels []model.Model
+	h.DB.Where("type = ? AND status = ?", "chat", "active").Order("sort ASC, id ASC").Find(&chatModels)
+	for _, m := range chatModels {
+		found := false
+		for _, c := range candidateModels {
+			if c == m.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			candidateModels = append(candidateModels, m.Name)
 		}
 	}
-	if modelName == "" {
+	if len(candidateModels) == 0 {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "未配置提示词优化模型"})
 		return
 	}
 
-	channel, err := h.LLM.SelectChannel(modelName)
-	if err != nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "无可用渠道"})
-		return
-	}
-
-	chatReq := &service.ChatRequest{
-		Model: modelName,
-		Messages: []service.ChatMessage{
-			{
-				Role: "system",
-				Content: `你是一位专业的AI图片生成提示词优化专家。用户会给你一个简短的图片描述，你需要将它扩展为一段详细、专业的英文图片生成提示词（prompt）。
+	systemPrompt := `你是一位专业的AI图片生成提示词优化专家。用户会给你一个简短的图片描述，你需要将它扩展为一段详细、专业的图片生成提示词（prompt）。
 
 规则：
 1. 保留用户原始意图，补充画面细节（构图、光线、色调、风格、材质等）
-2. 输出纯英文 prompt，不需要任何解释
-3. 长度控制在 50-150 词之间
-4. 使用逗号分隔不同描述维度
-5. 如果用户输入是中文，翻译为英文并优化`,
-			},
-			{
-				Role:    "user",
-				Content: req.Prompt,
-			},
-		},
-	}
+2. 用户输入什么语言，就用什么语言输出优化后的提示词
+3. 只输出优化后的提示词本身，不需要任何解释、前缀或标注
+4. 长度控制在 50-200 字之间
+5. 使用逗号分隔不同描述维度`
 
-	resp, err := h.LLM.ChatCompletion(channel, chatReq)
-	if err != nil {
-		log.Printf("[OptimizePrompt] LLM error: %v", err)
+	// Try each candidate model until one succeeds
+	var resp *service.ChatCompletionResponse
+	var lastErr error
+	for _, modelName := range candidateModels {
+		channel, err := h.LLM.SelectChannel(modelName)
+		if err != nil {
+			log.Printf("[OptimizePrompt] skip model %s: %v", modelName, err)
+			continue
+		}
+		log.Printf("[OptimizePrompt] trying model: %s via channel %s (id=%d)", modelName, channel.Name, channel.ID)
+
+		chatReq := &service.ChatRequest{
+			Model: modelName,
+			Messages: []service.ChatMessage{
+				{Role: "system", Content: systemPrompt},
+				{Role: "user", Content: req.Prompt},
+			},
+		}
+		// Use shorter timeout for prompt optimization (30s instead of channel default)
+		origTimeout := channel.Timeout
+		if channel.Timeout == 0 || channel.Timeout > 30 {
+			channel.Timeout = 30
+		}
+		resp, lastErr = h.LLM.ChatCompletion(channel, chatReq)
+		channel.Timeout = origTimeout
+		if lastErr == nil {
+			break
+		}
+		log.Printf("[OptimizePrompt] model %s failed: %v, trying next...", modelName, lastErr)
+	}
+	if lastErr != nil || resp == nil {
+		log.Printf("[OptimizePrompt] all models failed, last error: %v", lastErr)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "优化失败，请稍后重试"})
 		return
 	}
