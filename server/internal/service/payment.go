@@ -55,6 +55,17 @@ func NewPaymentService(db *gorm.DB, cfg *config.Config) *PaymentService {
 		providers["wechat"] = mock
 		providers["alipay"] = mock
 		log.Println("[Payment] Running in MOCK mode")
+	} else if cfg.Payment.Tianque.OrgID != "" {
+		// Tianque aggregated payment handles both wechat and alipay
+		tq, err := NewTianquePaymentProvider(cfg.Payment.Tianque)
+		if err != nil {
+			log.Printf("[Payment] WARNING: Tianque init failed: %v", err)
+		} else {
+			providers["wechat"] = tq
+			providers["alipay"] = tq
+			providers["tianque"] = tq
+			log.Printf("[Payment] Tianque provider enabled (orgId=%s, mno=%s)", cfg.Payment.Tianque.OrgID, cfg.Payment.Tianque.Mno)
+		}
 	} else {
 		if cfg.Payment.Wechat.MchID != "" {
 			providers["wechat"] = &WechatPaymentProvider{Cfg: cfg.Payment.Wechat}

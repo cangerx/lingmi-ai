@@ -74,3 +74,38 @@ func (h *PaymentNotifyHandler) AlipayNotify(c *gin.Context) {
 	// Alipay expects "success"
 	c.String(http.StatusOK, "success")
 }
+
+// TianqueNotify handles 随行付 callback
+func (h *PaymentNotifyHandler) TianqueNotify(c *gin.Context) {
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "msg": "read body error"})
+		return
+	}
+
+	provider, err := h.Payment.GetProvider("tianque")
+	if err != nil {
+		// Fallback: try wechat provider (tianque is registered under both)
+		provider, err = h.Payment.GetProvider("wechat")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "msg": "no tianque provider"})
+			return
+		}
+	}
+
+	orderNo, paid, err := provider.HandleNotify(body)
+	if err != nil {
+		log.Printf("[Payment] tianque notify error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "msg": err.Error()})
+		return
+	}
+
+	if paid && orderNo != "" {
+		if err := h.Payment.CompleteOrder(orderNo); err != nil {
+			log.Printf("[Payment] complete order %s error: %v", orderNo, err)
+		}
+	}
+
+	// 随行付 expects {"code": "0000", "msg": "success"}
+	c.JSON(http.StatusOK, gin.H{"code": "0000", "msg": "success"})
+}

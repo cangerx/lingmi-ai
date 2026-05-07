@@ -46,6 +46,18 @@ func (h *OrderHandler) Create(c *gin.Context) {
 	amount := req.Amount
 	credits := req.Credits
 
+	// Validate amount for non-package orders
+	if req.PackageID == 0 {
+		if amount <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "金额必须大于0"})
+			return
+		}
+		if credits <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "积分必须大于0"})
+			return
+		}
+	}
+
 	// If subscribing to a package, get package details
 	if req.PackageID > 0 {
 		var pkg model.Package

@@ -28,6 +28,13 @@ yarn-error.log*
 
 # Go
 server/tmp/
+server/config.yaml
+
+# Uploads
+server/uploads/
+
+# Windsurf
+.windsurf/
 
 # OS
 Thumbs.db

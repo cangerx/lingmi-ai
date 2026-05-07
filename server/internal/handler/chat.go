@@ -249,7 +249,7 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 
 	assistantContent := ""
 	if len(result.Choices) > 0 {
-		assistantContent = result.Choices[0].Message.Content
+		assistantContent = result.Choices[0].Message.ContentString()
 	}
 
 	// Save assistant message

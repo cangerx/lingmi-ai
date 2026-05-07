@@ -258,7 +258,7 @@ func (s *ModerationService) CheckTextWithAI(text string) (string, string) {
 		return "suspect", "empty AI response"
 	}
 
-	raw := resp.Choices[0].Message.Content
+	raw := resp.Choices[0].Message.ContentString()
 	var result struct {
 		Risk   string `json:"risk"`
 		Reason string `json:"reason"`
@@ -321,7 +321,7 @@ func (s *ModerationService) CheckImageWithAI(imageURL string) (string, string) {
 		return "safe", "empty response"
 	}
 
-	raw := resp.Choices[0].Message.Content
+	raw := resp.Choices[0].Message.ContentString()
 	var result struct {
 		Risk   string `json:"risk"`
 		Reason string `json:"reason"`

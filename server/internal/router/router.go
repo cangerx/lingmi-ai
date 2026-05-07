@@ -82,6 +82,11 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			templateHandler := &handler.TemplateHandler{DB: db}
 			public.GET("/templates", templateHandler.List)
 			public.GET("/templates/filters", templateHandler.Filters)
+
+			// Prompt templates
+			promptTemplateHandler := &handler.PromptTemplateHandler{DB: db}
+			public.GET("/prompt-templates", promptTemplateHandler.List)
+			public.GET("/prompt-templates/categories", promptTemplateHandler.Categories)
 		}
 
 		// Settings-driven APIs (no cache, so admin changes take effect immediately)
@@ -95,6 +100,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		// Payment callbacks (public, no auth)
 		v1.POST("/payment/wechat/notify", paymentNotifyHandler.WechatNotify)
 		v1.POST("/payment/alipay/notify", paymentNotifyHandler.AlipayNotify)
+		v1.POST("/payment/tianque/notify", paymentNotifyHandler.TianqueNotify)
 
 		// Protected routes (60 RPM per user)
 		protected := v1.Group("")
@@ -150,6 +156,16 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			protected.GET("/generations/:id", imageHandler.GetGeneration)
 			protected.DELETE("/generations/:id", imageHandler.DeleteGeneration)
 			protected.POST("/inspirations/publish", imageHandler.PublishToInspiration)
+
+			// Brand Kit (multi-brand)
+			brandKitHandler := &handler.BrandKitHandler{DB: db, Storage: store, LLM: llmService}
+			protected.GET("/brand-kits", brandKitHandler.List)
+			protected.GET("/brand-kits/:id", brandKitHandler.Get)
+			protected.POST("/brand-kits", brandKitHandler.Create)
+			protected.PUT("/brand-kits/:id", brandKitHandler.Update)
+			protected.DELETE("/brand-kits/:id", brandKitHandler.Delete)
+			protected.PUT("/brand-kits/:id/default", brandKitHandler.SetDefault)
+			protected.POST("/brand-kits/:id/parse-manual", brandKitHandler.ParseManual)
 
 			// User asset space
 			space := protected.Group("/space")

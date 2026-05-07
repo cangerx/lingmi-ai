@@ -417,6 +417,11 @@ func SeedPaymentSettings(db *gorm.DB) {
 		{Group: "payment", Key: "alipay_public_key", Value: "", Label: "支付宝公钥", Type: "password", Remark: "支付宝公钥"},
 		{Group: "payment", Key: "alipay_notify_url", Value: "http://localhost:8080/api/v1/payment/alipay/notify", Label: "支付宝回调地址", Type: "text", Remark: "支付宝异步通知地址"},
 		{Group: "payment", Key: "alipay_sandbox", Value: "true", Label: "支付宝沙箱模式", Type: "switch", Remark: "开启后使用支付宝沙箱环境"},
+		{Group: "payment", Key: "tianque_org_id", Value: "", Label: "随行付机构号", Type: "text", Remark: "随行付机构号（8或10位数字）"},
+		{Group: "payment", Key: "tianque_mno", Value: "", Label: "随行付商户号", Type: "text", Remark: "随行付商户编号（399开头15位数字）"},
+		{Group: "payment", Key: "tianque_private_key", Value: "", Label: "随行付私钥", Type: "password", Remark: "PKCS8格式RSA私钥（Base64内容）"},
+		{Group: "payment", Key: "tianque_base_url", Value: "https://openapi-test.tianquetech.com", Label: "随行付API地址", Type: "text", Remark: "测试: openapi-test / 生产: openapi"},
+		{Group: "payment", Key: "tianque_notify_url", Value: "http://localhost:8080/api/v1/payment/tianque/notify", Label: "随行付回调地址", Type: "text", Remark: "随行付异步通知地址"},
 	}
 
 	for _, s := range defaults {

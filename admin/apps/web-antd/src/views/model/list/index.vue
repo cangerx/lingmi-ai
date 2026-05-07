@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 import {
+  Badge,
   Button,
   Card,
   Form,
@@ -20,11 +21,22 @@ import {
   Tooltip,
 } from 'ant-design-vue';
 import {
-  ToolOutlined,
+  ApartmentOutlined,
+  ApiOutlined,
+  AppstoreOutlined,
+  CheckCircleOutlined,
+  CheckOutlined,
+  CloudOutlined,
+  CodeOutlined,
+  ExperimentOutlined,
+  InboxOutlined,
+  PauseCircleOutlined,
+  RobotOutlined,
   SearchOutlined,
   SettingOutlined,
-  InboxOutlined,
-  CheckOutlined,
+  ThunderboltOutlined,
+  ToolOutlined,
+  UnorderedListOutlined,
 } from '@ant-design/icons-vue';
 
 import {
@@ -39,11 +51,32 @@ import {
   updateModelConfig,
 } from '#/api/admin';
 
+// ─── Provider definitions ───
+interface ProviderDef {
+  key: string;
+  name: string;
+  icon: any;
+  color: string;
+  prefixes: string[];
+}
+
+const providers: ProviderDef[] = [
+  { key: 'all', name: '全部', icon: UnorderedListOutlined, color: '#1677ff', prefixes: [] },
+  { key: 'openai', name: 'GPT', icon: RobotOutlined, color: '#10a37f', prefixes: ['gpt-', 'o1-', 'o3-', 'o4-', 'dall-e', 'chatgpt'] },
+  { key: 'google', name: 'Gemini', icon: ExperimentOutlined, color: '#4285f4', prefixes: ['gemini'] },
+  { key: 'deepseek', name: 'DeepSeek', icon: CodeOutlined, color: '#0066ff', prefixes: ['deepseek'] },
+  { key: 'qwen', name: '通义千问', icon: CloudOutlined, color: '#6236ff', prefixes: ['qwen', 'qvq'] },
+  { key: 'doubao', name: '豆包', icon: ThunderboltOutlined, color: '#ff6900', prefixes: ['doubao', 'bytedance'] },
+  { key: 'zhipu', name: '智谱', icon: ApartmentOutlined, color: '#3d5afe', prefixes: ['glm', 'cogview', 'cogvideo'] },
+  { key: 'other', name: '其他', icon: ApiOutlined, color: '#8c8c8c', prefixes: [] },
+];
+
 // ─── Table ───
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
 const searchText = ref('');
 const filterType = ref('');
+const filterProvider = ref('all');
 
 const columns = [
   { title: 'ID', dataIndex: 'id', width: 50 },
@@ -55,7 +88,7 @@ const columns = [
   { title: '渠道', key: 'channels', width: 180 },
   { title: '价格(输入/输出)', key: 'price', width: 140 },
   { title: '状态', dataIndex: 'status', width: 80, key: 'status' },
-  { title: '操作', key: 'action', width: 200, fixed: 'right' },
+  { title: '操作', key: 'action', width: 200, fixed: 'right' as const },
 ];
 
 const typeColors: Record<string, string> = {
@@ -74,6 +107,42 @@ async function fetchData() {
   }
 }
 
+// ─── Computed stats & filtered data ───
+function matchesProvider(name: string, provider: ProviderDef): boolean {
+  return provider.prefixes.some((p) => name.toLowerCase().startsWith(p));
+}
+
+const filteredData = computed(() => {
+  if (filterProvider.value === 'all') return dataSource.value;
+  const prov = providers.find((p) => p.key === filterProvider.value);
+  if (!prov) return dataSource.value;
+  if (prov.key === 'other') {
+    return dataSource.value.filter(
+      (m) => !providers.some((p) => p.key !== 'all' && p.key !== 'other' && matchesProvider(m.name, p)),
+    );
+  }
+  return dataSource.value.filter((m) => matchesProvider(m.name, prov));
+});
+
+const totalCount = computed(() => dataSource.value.length);
+const activeCount = computed(() => dataSource.value.filter((m) => m.status === 'active').length);
+
+const providerCounts = computed(() => {
+  const counts: Record<string, number> = {};
+  for (const p of providers) {
+    if (p.key === 'all') {
+      counts[p.key] = dataSource.value.length;
+    } else if (p.key === 'other') {
+      counts[p.key] = dataSource.value.filter(
+        (m) => !providers.some((pp) => pp.key !== 'all' && pp.key !== 'other' && matchesProvider(m.name, pp)),
+      ).length;
+    } else {
+      counts[p.key] = dataSource.value.filter((m) => matchesProvider(m.name, p)).length;
+    }
+  }
+  return counts;
+});
+
 // ─── Form Modal ───
 const modalVisible = ref(false);
 const editingId = ref<null | number>(null);
@@ -84,7 +153,7 @@ const form = reactive({
   provider: '',
   description: '',
   badge: '',
-  tags: '' as string | string[],
+  tags: '' as any,
   icon: '',
   vip_only: false,
   price_input: 0,
@@ -282,11 +351,13 @@ async function openConfigModal(record: any) {
 }
 
 function toggleConfigValue(key: string, val: string) {
-  const arr = configData[key].values;
+  const item = configData[key];
+  if (!item) return;
+  const arr = item.values;
   const idx = arr.indexOf(val);
   if (idx >= 0) {
     arr.splice(idx, 1);
-    if (configData[key].default_value === val) configData[key].default_value = arr[0] || '';
+    if (item.default_value === val) item.default_value = arr[0] || '';
   } else {
     arr.push(val);
   }
@@ -329,101 +400,177 @@ onMounted(fetchData);
 
 <template>
   <div class="p-5">
-    <Card title="模型管理">
-      <template #extra>
-        <Space>
-          <Input.Search
-            v-model:value="searchText"
-            placeholder="搜索模型名称"
-            style="width: 200px"
-            allow-clear
-            @search="fetchData"
-          />
-          <Select
-            v-model:value="filterType"
-            placeholder="类型"
-            allow-clear
-            style="width: 100px"
-            @change="fetchData"
+    <Spin :spinning="loading">
+      <!-- Status Overview -->
+      <Card class="mb-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <AppstoreOutlined
+              class="text-2xl"
+              :class="totalCount > 0 ? 'text-blue-500' : 'text-gray-300'"
+            />
+            <div>
+              <h3 class="text-base font-semibold m-0">模型管理</h3>
+              <div class="flex items-center gap-2 mt-1">
+                <Tag color="blue">{{ totalCount }} 个模型</Tag>
+                <Tag color="green">
+                  <CheckCircleOutlined /> {{ activeCount }} 启用
+                </Tag>
+                <Tag v-if="totalCount - activeCount > 0" color="default">
+                  <PauseCircleOutlined /> {{ totalCount - activeCount }} 禁用
+                </Tag>
+              </div>
+            </div>
+          </div>
+          <Space>
+            <Button :loading="seeding" @click="handleSeedImage">
+              <ToolOutlined /> 预填图片模型
+            </Button>
+            <Button type="primary" @click="openCreateModal">新建模型</Button>
+          </Space>
+        </div>
+      </Card>
+
+      <!-- Provider Filter Cards -->
+      <Card class="mb-4" size="small">
+        <div class="flex items-center gap-2 flex-wrap">
+          <div
+            v-for="prov in providers"
+            :key="prov.key"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all text-sm border"
+            :class="
+              filterProvider === prov.key
+                ? 'border-blue-400 bg-blue-50 text-blue-700 shadow-sm'
+                : 'border-gray-100 bg-white hover:border-gray-200 text-gray-600 hover:bg-gray-50'
+            "
+            @click="filterProvider = prov.key"
           >
-            <Select.Option value="">全部</Select.Option>
-            <Select.Option value="chat">对话</Select.Option>
-            <Select.Option value="image">图片</Select.Option>
-            <Select.Option value="video">视频</Select.Option>
-            <Select.Option value="voice">语音</Select.Option>
-          </Select>
-          <Button :loading="seeding" @click="handleSeedImage"><ToolOutlined /> 预填图片模型</Button>
-          <Button type="primary" @click="openCreateModal">新建模型</Button>
-        </Space>
-      </template>
+            <component :is="prov.icon" :style="{ color: prov.color }" />
+            <span class="font-medium">{{ prov.name }}</span>
+            <Badge
+              v-if="providerCounts[prov.key]"
+              :count="providerCounts[prov.key]"
+              :number-style="{
+                backgroundColor: filterProvider === prov.key ? '#1677ff' : '#f0f0f0',
+                color: filterProvider === prov.key ? '#fff' : '#8c8c8c',
+                fontSize: '11px',
+                height: '18px',
+                lineHeight: '18px',
+                minWidth: '18px',
+                padding: '0 5px',
+              }"
+            />
+          </div>
+        </div>
+      </Card>
 
-      <Table
-        :columns="columns"
-        :data-source="dataSource"
-        :loading="loading"
-        :locale="{ emptyText: '暂无模型数据' }"
-        :pagination="{ pageSize: 50, showSizeChanger: true, showTotal: (t: number) => `共 ${t} 条` }"
-        row-key="id"
-        size="middle"
-        :scroll="{ x: 1400 }"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'badge'">
-            <Tag v-if="record.badge === 'Hot'" color="red">Hot</Tag>
-            <Tag v-else-if="record.badge === 'New'" color="green">New</Tag>
-            <Tag v-else-if="record.badge === 'Pro'" color="purple">Pro</Tag>
-            <span v-else class="text-gray-300">—</span>
-          </template>
-
-          <template v-if="column.key === 'type'">
-            <Tag :color="typeColors[record.type] || 'default'">{{ record.type }}</Tag>
-          </template>
-
-          <template v-if="column.key === 'channels'">
-            <template v-if="record.channel_count > 0">
-              <Tooltip :title="(record.channels || []).map((c: any) => c.name).join(', ')">
-                <Space :size="2" wrap>
-                  <Tag v-for="ch in (record.channels || []).slice(0, 3)" :key="ch.id" color="blue" style="margin: 0">
-                    {{ ch.name }}
-                  </Tag>
-                  <Tag v-if="record.channel_count > 3" color="default" style="margin: 0">
-                    +{{ record.channel_count - 3 }}
-                  </Tag>
-                </Space>
-              </Tooltip>
-            </template>
-            <span v-else class="text-gray-300">无渠道</span>
-          </template>
-
-          <template v-if="column.key === 'price'">
-            <span class="text-xs font-mono">
-              {{ record.price_input?.toFixed(2) || '0' }} / {{ record.price_output?.toFixed(2) || '0' }}
-            </span>
-          </template>
-
-          <template v-if="column.key === 'status'">
-            <Tag :color="record.status === 'active' ? 'green' : 'default'">
-              {{ record.status === 'active' ? '启用' : '禁用' }}
-            </Tag>
-          </template>
-
-          <template v-if="column.key === 'action'">
-            <Space>
-              <Tooltip title="线路观测">
-                <Button size="small" :disabled="record.channel_count === 0" @click="handleProbe(record)">
-                  <SearchOutlined /> 探测
-                </Button>
-              </Tooltip>
-              <Button v-if="record.type === 'image'" size="small" @click="openConfigModal(record)"><SettingOutlined /> 配置</Button>
-              <Button size="small" @click="openEditModal(record)">编辑</Button>
-              <Popconfirm title="确认删除？" @confirm="handleDelete(record.id)">
-                <Button size="small" danger>删除</Button>
-              </Popconfirm>
-            </Space>
-          </template>
+      <!-- Table Card -->
+      <Card :body-style="{ padding: '12px 24px' }">
+        <template #title>
+          <div class="flex items-center gap-3">
+            <component
+              :is="providers.find(p => p.key === filterProvider)?.icon"
+              :style="{ color: providers.find(p => p.key === filterProvider)?.color, fontSize: '16px' }"
+            />
+            <span>{{ providers.find(p => p.key === filterProvider)?.name }}</span>
+            <Tag>{{ filteredData.length }} 条</Tag>
+          </div>
         </template>
-      </Table>
-    </Card>
+        <template #extra>
+          <Space>
+            <Input.Search
+              v-model:value="searchText"
+              placeholder="搜索模型名称"
+              style="width: 180px"
+              allow-clear
+              size="small"
+              @search="fetchData"
+            />
+            <Select
+              v-model:value="filterType"
+              placeholder="类型"
+              allow-clear
+              style="width: 90px"
+              size="small"
+              @change="fetchData"
+            >
+              <Select.Option value="">全部</Select.Option>
+              <Select.Option value="chat">对话</Select.Option>
+              <Select.Option value="image">图片</Select.Option>
+              <Select.Option value="video">视频</Select.Option>
+              <Select.Option value="voice">语音</Select.Option>
+            </Select>
+          </Space>
+        </template>
+
+        <Table
+          :columns="columns"
+          :data-source="filteredData"
+          :loading="loading"
+          :locale="{ emptyText: '暂无模型数据' }"
+          :pagination="{ pageSize: 50, showSizeChanger: true, showTotal: (t: number) => `共 ${t} 条` }"
+          row-key="id"
+          size="middle"
+          :scroll="{ x: 1400 }"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'badge'">
+              <Tag v-if="record.badge === 'Hot'" color="red">Hot</Tag>
+              <Tag v-else-if="record.badge === 'New'" color="green">New</Tag>
+              <Tag v-else-if="record.badge === 'Pro'" color="purple">Pro</Tag>
+              <span v-else class="text-gray-300">—</span>
+            </template>
+
+            <template v-if="column.key === 'type'">
+              <Tag :color="typeColors[record.type] || 'default'">{{ record.type }}</Tag>
+            </template>
+
+            <template v-if="column.key === 'channels'">
+              <template v-if="record.channel_count > 0">
+                <Tooltip :title="(record.channels || []).map((c: any) => c.name).join(', ')">
+                  <Space :size="2" wrap>
+                    <Tag v-for="ch in (record.channels || []).slice(0, 3)" :key="ch.id" color="blue" style="margin: 0">
+                      {{ ch.name }}
+                    </Tag>
+                    <Tag v-if="record.channel_count > 3" color="default" style="margin: 0">
+                      +{{ record.channel_count - 3 }}
+                    </Tag>
+                  </Space>
+                </Tooltip>
+              </template>
+              <span v-else class="text-gray-300">无渠道</span>
+            </template>
+
+            <template v-if="column.key === 'price'">
+              <span class="text-xs font-mono">
+                {{ record.price_input?.toFixed(2) || '0' }} / {{ record.price_output?.toFixed(2) || '0' }}
+              </span>
+            </template>
+
+            <template v-if="column.key === 'status'">
+              <Tag :color="record.status === 'active' ? 'green' : 'default'">
+                {{ record.status === 'active' ? '启用' : '禁用' }}
+              </Tag>
+            </template>
+
+            <template v-if="column.key === 'action'">
+              <Space>
+                <Tooltip title="线路观测">
+                  <Button size="small" :disabled="record.channel_count === 0" @click="handleProbe(record)">
+                    <SearchOutlined /> 探测
+                  </Button>
+                </Tooltip>
+                <Button v-if="record.type === 'image'" size="small" @click="openConfigModal(record)"><SettingOutlined /> 配置</Button>
+                <Button size="small" @click="openEditModal(record)">编辑</Button>
+                <Popconfirm title="确认删除？" @confirm="handleDelete(record.id)">
+                  <Button size="small" danger>删除</Button>
+                </Popconfirm>
+              </Space>
+            </template>
+          </template>
+        </Table>
+      </Card>
+    </Spin>
 
     <!-- Edit/Create Modal -->
     <Modal
@@ -585,7 +732,7 @@ onMounted(fetchData);
               :value="configData[ck.key]?.default_value"
               size="small"
               style="width: 120px"
-              @change="(v: any) => configData[ck.key].default_value = v"
+              @change="(v: any) => { configData[ck.key]!.default_value = v; }"
             >
               <Select.Option v-for="v in configData[ck.key]?.values" :key="v" :value="v">{{ v }}</Select.Option>
             </Select>

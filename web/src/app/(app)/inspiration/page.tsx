@@ -252,7 +252,7 @@ export default function InspirationPage() {
 
   const insHasMore = items.length < insTotal;
 
-  const colCount = typeof window !== "undefined" && window.innerWidth < 768 ? 2 : 4;
+  const colCount = typeof window !== "undefined" ? (window.innerWidth < 640 ? 2 : window.innerWidth < 768 ? 3 : window.innerWidth < 1024 ? 4 : window.innerWidth < 1280 ? 5 : 6) : 6;
   const insColumns: InspirationItem[][] = Array.from({ length: colCount }, () => []);
   items.forEach((item, i) => insColumns[i % colCount].push(item));
 
@@ -455,9 +455,9 @@ export default function InspirationPage() {
             </div>
           ) : (
             <div className="p-4 md:p-5">
-              <div className="flex gap-3 md:gap-4">
+              <div className="flex gap-2.5">
                 {insColumns.map((colItems, colIdx) => (
-                  <div key={colIdx} className="flex-1 space-y-3 md:space-y-4">
+                  <div key={colIdx} className="flex-1 space-y-2.5">
                     {colItems.map((item, i) => (
                       <motion.div
                         key={item.id}
@@ -472,7 +472,7 @@ export default function InspirationPage() {
                             <img
                               src={item.image_url} alt={item.title}
                               className="w-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                              style={{ minHeight: 160 }} loading="lazy"
+                              style={{ minHeight: 100, maxHeight: 280 }} loading="lazy"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             {item.featured && (

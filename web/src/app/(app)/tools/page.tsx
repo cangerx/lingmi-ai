@@ -55,12 +55,12 @@ const imageTools = [
   { title: "智能抠图", desc: "3秒智能识别除背景", href: "/cutout", icon: Scissors, gradient: "from-emerald-100 to-teal-50" },
   { title: "AI 消除", desc: "一键消除，不留痕迹", href: "/eraser", icon: Eraser, gradient: "from-orange-100 to-amber-50" },
   { title: "变清晰", desc: "告别渣画质", href: "/upscale", icon: Sparkles, gradient: "from-amber-100 to-yellow-50" },
-  { title: "证件照", desc: "换底色/改尺寸/排版", href: "/coming-soon?tool=id-photo", icon: CreditCard, gradient: "from-blue-100 to-sky-50" },
-  { title: "无损改尺寸", desc: "缩放图片，清晰不失真", href: "/coming-soon?tool=resize", icon: Expand, gradient: "from-indigo-100 to-blue-50" },
-  { title: "拼图", desc: "1秒拼出高级感", href: "/coming-soon?tool=collage", icon: Combine, gradient: "from-violet-100 to-purple-50" },
+  { title: "证件照", desc: "换底色/改尺寸/排版", href: "/id-photo", icon: CreditCard, gradient: "from-blue-100 to-sky-50" },
+  { title: "无损改尺寸", desc: "缩放图片，清晰不失真", href: "/resize", icon: Expand, gradient: "from-indigo-100 to-blue-50" },
+  { title: "拼图", desc: "1秒拼出高级感", href: "/collage", icon: Combine, gradient: "from-violet-100 to-purple-50" },
   { title: "AI 扩图", desc: "轻松延展画面", href: "/expand", icon: Expand, gradient: "from-cyan-100 to-teal-50" },
-  { title: "形象照", desc: "一键换脸变装", href: "/coming-soon?tool=portrait", icon: UserCircle, gradient: "from-rose-100 to-pink-50" },
-  { title: "图片批处理", desc: "一站式批量修图", href: "/coming-soon?tool=batch-edit", icon: GridIcon, gradient: "from-neutral-100 to-neutral-50" },
+  { title: "形象照", desc: "一键换脸变装", href: "/portrait", icon: UserCircle, gradient: "from-rose-100 to-pink-50" },
+  { title: "图片批处理", desc: "一站式批量修图", href: "/batch-edit", icon: GridIcon, gradient: "from-neutral-100 to-neutral-50" },
 ];
 
 /* ── AI 设计 ────────────────────────────────── */

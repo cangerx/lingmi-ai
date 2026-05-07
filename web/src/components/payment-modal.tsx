@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, QrCode, Loader2, CheckCircle, AlertCircle, Smartphone } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { X, Loader2, CheckCircle, AlertCircle, Smartphone } from "lucide-react";
 import { orderAPI } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
 
 interface PaymentModalProps {
   open: boolean;
@@ -27,6 +27,7 @@ export default function PaymentModal({
 }: PaymentModalProps) {
   const [status, setStatus] = useState<"pending" | "paid" | "expired" | "error">("pending");
   const [countdown, setCountdown] = useState(0);
+  const [isMockMode, setIsMockMode] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -40,6 +41,11 @@ export default function PaymentModal({
       countdownRef.current = null;
     }
   }, []);
+
+  // Detect mock mode: payUrl contains "mock-pay.example.com"
+  useEffect(() => {
+    setIsMockMode(payUrl?.includes("mock-pay") || false);
+  }, [payUrl]);
 
   useEffect(() => {
     if (!open || !orderNo) return;
@@ -60,7 +66,7 @@ export default function PaymentModal({
       });
     }, 1000);
 
-    // Poll payment status
+    // Poll payment status every 3s
     pollRef.current = setInterval(async () => {
       try {
         const res = await orderAPI.payStatus(orderNo);
@@ -80,7 +86,6 @@ export default function PaymentModal({
   const handleMockPay = async () => {
     try {
       await orderAPI.mockPay(orderNo);
-      // polling will pick it up
     } catch {
       setStatus("error");
     }
@@ -120,13 +125,30 @@ export default function PaymentModal({
                   <p className="text-3xl font-bold text-neutral-900 mt-1">¥{amount.toFixed(2)}</p>
                 </div>
 
-                {/* QR Code area */}
-                <div className="w-48 h-48 bg-neutral-50 border-2 border-dashed border-neutral-200 rounded-xl flex flex-col items-center justify-center gap-2">
-                  <QrCode size={48} className="text-neutral-300" />
-                  <p className="text-xs text-neutral-400 text-center px-4">
-                    请使用微信或支付宝扫描二维码完成支付
-                  </p>
-                </div>
+                {/* QR Code */}
+                {payUrl && !isMockMode ? (
+                  <div className="p-4 bg-white rounded-xl border border-neutral-100 shadow-sm">
+                    <QRCodeSVG
+                      value={payUrl}
+                      size={192}
+                      level="M"
+                      includeMargin={false}
+                      bgColor="#ffffff"
+                      fgColor="#171717"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-48 h-48 bg-neutral-50 border-2 border-dashed border-neutral-200 rounded-xl flex flex-col items-center justify-center gap-2">
+                    <Smartphone size={36} className="text-neutral-300" />
+                    <p className="text-xs text-neutral-400 text-center px-4">
+                      模拟支付模式
+                    </p>
+                  </div>
+                )}
+
+                <p className="text-xs text-neutral-400 text-center">
+                  请使用微信或支付宝扫描二维码完成支付
+                </p>
 
                 {/* Countdown */}
                 <div className="flex items-center gap-2 text-sm text-neutral-500">
@@ -134,23 +156,29 @@ export default function PaymentModal({
                   <span>等待支付... {formatCountdown(countdown)}</span>
                 </div>
 
-                {/* Mock pay button (dev only) */}
-                <button
-                  onClick={handleMockPay}
-                  className="w-full py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Smartphone size={16} />
-                  模拟支付（测试）
-                </button>
+                {/* Mock pay button — only in mock mode */}
+                {isMockMode && (
+                  <button
+                    onClick={handleMockPay}
+                    className="w-full py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Smartphone size={16} />
+                    模拟支付（测试）
+                  </button>
+                )}
               </>
             )}
 
             {status === "paid" && (
-              <div className="flex flex-col items-center gap-3 py-8">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="flex flex-col items-center gap-3 py-8"
+              >
                 <CheckCircle size={48} className="text-emerald-500" />
                 <p className="text-lg font-semibold text-neutral-900">支付成功</p>
                 <p className="text-sm text-neutral-500">积分已到账</p>
-              </div>
+              </motion.div>
             )}
 
             {status === "expired" && (
@@ -172,6 +200,12 @@ export default function PaymentModal({
                 <AlertCircle size={48} className="text-red-500" />
                 <p className="text-lg font-semibold text-neutral-900">支付异常</p>
                 <p className="text-sm text-neutral-500">请稍后重试</p>
+                <button
+                  onClick={() => { stopPolling(); onClose(); }}
+                  className="mt-2 px-6 py-2 rounded-xl border border-neutral-200 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+                >
+                  关闭
+                </button>
               </div>
             )}
           </div>

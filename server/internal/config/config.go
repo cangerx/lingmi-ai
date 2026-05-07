@@ -56,9 +56,19 @@ type StorageConfig struct {
 }
 
 type PaymentConfig struct {
-	Mock   bool          `mapstructure:"mock"`
-	Wechat WechatConfig  `mapstructure:"wechat"`
-	Alipay AlipayConfig  `mapstructure:"alipay"`
+	Mock    bool           `mapstructure:"mock"`
+	Wechat  WechatConfig   `mapstructure:"wechat"`
+	Alipay  AlipayConfig   `mapstructure:"alipay"`
+	Tianque TianqueConfig  `mapstructure:"tianque"`
+}
+
+type TianqueConfig struct {
+	OrgID      string `mapstructure:"org_id"`
+	Mno        string `mapstructure:"mno"`
+	PrivateKey string `mapstructure:"private_key"`
+	Version    string `mapstructure:"version"`
+	BaseURL    string `mapstructure:"base_url"`
+	NotifyURL  string `mapstructure:"notify_url"`
 }
 
 type WechatConfig struct {

@@ -150,7 +150,7 @@ export const imageAPI = {
   poster: (data: { prompt: string; category?: string; size?: string; model?: string; quality?: string; resolution?: string }) =>
     api.post("/image/poster", data, { timeout: 120000 }),
   // 图片生成（通用文生图）
-  generate: (data: { prompt: string; model?: string; size?: string; n?: number; quality?: string; resolution?: string; ratio?: string }) =>
+  generate: (data: { prompt: string; model?: string; size?: string; n?: number; quality?: string; resolution?: string; ratio?: string; image_urls?: string[]; apply_brand?: boolean }) =>
     api.post("/image/generate", data, { timeout: 120000 }),
   // 优化提示词
   optimizePrompt: (prompt: string) =>
@@ -172,17 +172,63 @@ export const spaceAPI = {
   createFolder: (name: string) => api.post("/space/folders", { name }),
   renameFolder: (id: number, name: string) => api.put(`/space/folders/${id}`, { name }),
   deleteFolder: (id: number) => api.delete(`/space/folders/${id}`),
-  listFiles: (params?: { folder_id?: string; page?: number; page_size?: number }) =>
+  listFiles: (params?: { folder_id?: string; page?: number; page_size?: number; asset_type?: string }) =>
     api.get("/space/files", { params }),
-  uploadFile: (file: File, folderId?: number) => {
+  uploadFile: (file: File, folderId?: number, assetType?: string) => {
     const fd = new FormData();
     fd.append("file", file);
     if (folderId) fd.append("folder_id", String(folderId));
+    if (assetType) fd.append("asset_type", assetType);
     return api.post("/space/files", fd, { headers: { "Content-Type": "multipart/form-data" }, timeout: 60000 });
   },
   moveFile: (id: number, folderId: number | null) => api.put(`/space/files/${id}`, { folder_id: folderId || 0 }),
   renameFile: (id: number, name: string) => api.put(`/space/files/${id}`, { name }),
   deleteFile: (id: number) => api.delete(`/space/files/${id}`),
+};
+
+// Brand Kit API (multi-brand, Lovart-style)
+export const brandAPI = {
+  list: () => api.get("/brand-kits"),
+  get: (id: number) => api.get(`/brand-kits/${id}`),
+  create: (data: {
+    brand_name?: string;
+    description?: string;
+    design_guide?: string;
+    colors?: string;
+    fonts?: string;
+    keywords?: string;
+    logos?: string;
+    brand_images?: string;
+    logo_file_ids?: string;
+  }) => api.post("/brand-kits", data),
+  update: (id: number, data: {
+    brand_name?: string;
+    description?: string;
+    design_guide?: string;
+    colors?: string;
+    fonts?: string;
+    keywords?: string;
+    logos?: string;
+    brand_images?: string;
+    logo_file_ids?: string;
+  }) => api.put(`/brand-kits/${id}`, data),
+  delete: (id: number) => api.delete(`/brand-kits/${id}`),
+  setDefault: (id: number) => api.put(`/brand-kits/${id}/default`),
+  parseManual: (id: number, file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return api.post(`/brand-kits/${id}/parse-manual`, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 120000,
+    });
+  },
+};
+
+// Prompt Template API
+export const promptTemplateAPI = {
+  list: (category?: string) =>
+    api.get("/prompt-templates", { params: category ? { category } : {} }),
+  categories: () => api.get("/prompt-templates/categories"),
 };
 
 // Video API

@@ -20,7 +20,9 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Pencil,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { generationAPI, inspirationAPI } from "@/lib/api";
 import { downloadImage } from "@/lib/download";
@@ -55,6 +57,7 @@ interface Generation {
 
 export default function ProjectsPage() {
   usePageTitle("我的作品");
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const [items, setItems] = useState<Generation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +69,7 @@ export default function ProjectsPage() {
   const [zoom, setZoom] = useState(1);
   const [publishing, setPublishing] = useState(false);
   const [published, setPublished] = useState(false);
+  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
   const pageSize = 24;
 
   const fetchItems = useCallback(async () => {
@@ -84,13 +88,17 @@ export default function ProjectsPage() {
   const totalPages = Math.ceil(total / pageSize);
   const filtered = items.filter((x) => !searchQuery || (x.prompt && x.prompt.toLowerCase().includes(searchQuery.toLowerCase())));
 
-  const openDetail = (item: Generation) => { setSelected(item); setZoom(1); setPublished(false); };
+  const openDetail = (item: Generation) => { setSelected(item); setZoom(1); setPublished(false); setImgSize(null); };
 
   const handlePublish = async () => {
     if (!selected || publishing) return;
     setPublishing(true);
     try { await inspirationAPI.publish({ generation_id: selected.id }); setPublished(true); }
-    catch (e: any) { const msg = e?.response?.data?.error; if (msg?.includes("已发布")) setPublished(true); else alert(msg || "发布失败"); }
+    catch (e: any) {
+      const msg = e?.response?.data?.error || e?.message;
+      if (msg?.includes("已发布")) setPublished(true);
+      else alert(`发布失败：${msg || "未知错误，请稍后重试"}`);
+    }
     finally { setPublishing(false); }
   };
 
@@ -100,6 +108,13 @@ export default function ProjectsPage() {
 
   const handleReGenerate = (item: Generation) => {
     if (item.prompt) { const q = encodeURIComponent(item.prompt); window.location.href = `/?prompt=${q}&auto=1`; }
+  };
+
+  const handleEdit = (item: Generation) => {
+    const params = new URLSearchParams();
+    if (item.prompt) params.set("prompt", item.prompt);
+    if (item.result_url) params.set("image", item.result_url);
+    router.push(`/generate?${params.toString()}`);
   };
 
   const typeLabel = (t: string) => TYPE_TABS.find((x) => x.key === t)?.label || t;
@@ -167,13 +182,13 @@ export default function ProjectsPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2.5">
               {filtered.map((item) => (
                 <motion.div key={item.id} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
                   className="group relative rounded-xl overflow-hidden bg-white border border-neutral-200/60 shadow-sm hover:shadow-md transition-all cursor-pointer"
                   onClick={() => openDetail(item)}>
                   {item.status === "failed" ? (
-                    <div className="w-full aspect-square bg-red-50 flex flex-col items-center justify-center gap-2 relative">
+                    <div className="w-full aspect-[4/5] bg-red-50 flex flex-col items-center justify-center gap-2 relative">
                       <AlertCircle size={24} className="text-red-300" />
                       <p className="text-[11px] text-red-400 font-medium">生成失败</p>
                       <div className="absolute bottom-2 left-2 right-2 flex gap-1.5">
@@ -188,14 +203,14 @@ export default function ProjectsPage() {
                       </div>
                     </div>
                   ) : item.status === "pending" || item.status === "processing" ? (
-                    <div className="w-full aspect-square bg-neutral-50 flex flex-col items-center justify-center gap-2">
+                    <div className="w-full aspect-[4/5] bg-neutral-50 flex flex-col items-center justify-center gap-2">
                       <Loader2 size={24} className="text-blue-400 animate-spin" />
                       <p className="text-[11px] text-neutral-400">生成中...</p>
                     </div>
                   ) : item.result_url ? (
-                    <img src={item.result_url} alt={item.prompt || ""} className="w-full aspect-square object-cover" loading="lazy" />
+                    <img src={item.result_url} alt={item.prompt || ""} className="w-full aspect-[4/5] object-cover" loading="lazy" />
                   ) : (
-                    <div className="w-full aspect-square bg-neutral-50 flex items-center justify-center"><ImageIcon size={24} className="text-neutral-200" /></div>
+                    <div className="w-full aspect-[4/5] bg-neutral-50 flex items-center justify-center"><ImageIcon size={24} className="text-neutral-200" /></div>
                   )}
                   {item.status === "completed" && (
                     <>
@@ -236,10 +251,15 @@ export default function ProjectsPage() {
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col md:flex-row overflow-hidden" onClick={(e) => e.stopPropagation()}>
               {/* Image */}
-              <div className="flex-1 bg-neutral-100 flex items-center justify-center p-4 relative min-h-[300px] overflow-hidden">
+              <div
+                className="flex-1 bg-neutral-100 flex items-center justify-center p-4 relative min-h-[300px] overflow-hidden cursor-zoom-in"
+                onDoubleClick={() => setZoom((z) => z >= 2 ? 1 : Math.min(4, z * 2))}
+                onWheel={(e) => { e.preventDefault(); setZoom((z) => Math.max(0.25, Math.min(4, z + (e.deltaY < 0 ? 0.15 : -0.15)))); }}
+              >
                 <div style={{ transform: `scale(${zoom})`, transition: "transform 0.2s" }} className="max-w-full max-h-full">
                   {selected.result_url ? (
-                    <img src={selected.result_url} alt="" className="max-w-full max-h-[70vh] object-contain rounded-lg" draggable={false} />
+                    <img src={selected.result_url} alt="" className="max-w-full max-h-[70vh] object-contain rounded-lg" draggable={false}
+                      onLoad={(e) => { const img = e.currentTarget; setImgSize({ w: img.naturalWidth, h: img.naturalHeight }); }} />
                   ) : (
                     <div className="w-64 h-64 bg-neutral-200 rounded-xl flex items-center justify-center"><ImageIcon size={40} className="text-neutral-300" /></div>
                   )}
@@ -248,6 +268,7 @@ export default function ProjectsPage() {
                   <button onClick={() => setZoom((z) => Math.max(0.25, z - 0.25))} className="p-1 hover:bg-neutral-100 rounded"><ZoomOut size={14} className="text-neutral-600" /></button>
                   <span className="text-[11px] text-neutral-500 min-w-[40px] text-center">{Math.round(zoom * 100)}%</span>
                   <button onClick={() => setZoom((z) => Math.min(4, z + 0.25))} className="p-1 hover:bg-neutral-100 rounded"><ZoomIn size={14} className="text-neutral-600" /></button>
+                  {imgSize && <span className="text-[10px] text-neutral-400 ml-1 border-l border-neutral-200 pl-1.5">{imgSize.w}×{imgSize.h}</span>}
                 </div>
               </div>
 
@@ -279,6 +300,12 @@ export default function ProjectsPage() {
                       <label className="block text-[10px] text-neutral-400 mb-0.5">时间</label>
                       <p className="text-xs font-medium text-neutral-700">{new Date(selected.created_at).toLocaleDateString("zh-CN")}</p>
                     </div>
+                    {imgSize && (
+                      <div className="bg-neutral-50 rounded-lg p-2.5 col-span-2">
+                        <label className="block text-[10px] text-neutral-400 mb-0.5">图片尺寸</label>
+                        <p className="text-xs font-medium text-neutral-700">{imgSize.w} × {imgSize.h} px</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -305,6 +332,10 @@ export default function ProjectsPage() {
                       <button onClick={() => selected.result_url && downloadImage(selected.result_url, `creation-${selected.id}.png`)}
                         disabled={!selected.result_url} className="w-full py-2 rounded-xl bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-800 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5">
                         <Download size={13} /> 下载原图
+                      </button>
+                      <button onClick={() => handleEdit(selected)} disabled={!selected.result_url}
+                        className="w-full py-2 rounded-xl text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5">
+                        <Pencil size={13} /> 重新编辑
                       </button>
                       <button onClick={handlePublish} disabled={publishing || published || !selected.result_url}
                         className={cn("w-full py-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-center gap-1.5",

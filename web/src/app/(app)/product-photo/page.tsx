@@ -229,7 +229,7 @@ function ProductPhotoContent() {
       {/* Right: Result grid */}
       <div className="flex-1 p-6 overflow-y-auto bg-[#fafafa] dark:bg-[#0A0A0A]">
         {results.length > 0 ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {results.map((r: any, i: number) => (
               <motion.div
                 key={r?.id || i}

@@ -14,10 +14,58 @@ import (
 	"gorm.io/gorm"
 )
 
-// ChatMessage represents a single message in the chat
+// ChatMessage represents a single message in the chat.
+// Content can be a plain string or []ContentPart for multimodal (vision) requests.
 type ChatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role    string      `json:"role"`
+	Content interface{} `json:"content"`
+}
+
+// ContentPart represents a part of a multimodal message (OpenAI Vision format).
+type ContentPart struct {
+	Type     string    `json:"type"` // "text" | "image_url"
+	Text     string    `json:"text,omitempty"`
+	ImageURL *ImageURL `json:"image_url,omitempty"`
+}
+
+// ImageURL represents an image reference in a multimodal message.
+type ImageURL struct {
+	URL    string `json:"url"`
+	Detail string `json:"detail,omitempty"` // "low" | "high" | "auto"
+}
+
+// ContentString extracts the text content from Content (handles both string and multimodal).
+func (m ChatMessage) ContentString() string {
+	if s, ok := m.Content.(string); ok {
+		return s
+	}
+	// Try to extract from first text part if it's a slice
+	if parts, ok := m.Content.([]interface{}); ok {
+		for _, p := range parts {
+			if pm, ok := p.(map[string]interface{}); ok {
+				if pm["type"] == "text" {
+					if t, ok := pm["text"].(string); ok {
+						return t
+					}
+				}
+			}
+		}
+	}
+	return fmt.Sprintf("%v", m.Content)
+}
+
+// NewTextMessage creates a simple text ChatMessage.
+func NewTextMessage(role, content string) ChatMessage {
+	return ChatMessage{Role: role, Content: content}
+}
+
+// NewVisionMessage creates a multimodal message with text and image URL(s).
+func NewVisionMessage(role, text string, imageURLs ...string) ChatMessage {
+	parts := []ContentPart{{Type: "text", Text: text}}
+	for _, url := range imageURLs {
+		parts = append(parts, ContentPart{Type: "image_url", ImageURL: &ImageURL{URL: url, Detail: "auto"}})
+	}
+	return ChatMessage{Role: role, Content: parts}
 }
 
 // ChatRequest is the request payload from client

@@ -76,5 +76,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&model.UserFile{},
 		&model.UserStorageQuota{},
 		&model.Template{},
+		&model.BrandKit{},
+		&model.PromptTemplate{},
 	)
 }

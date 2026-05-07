@@ -6,8 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
+	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -19,12 +23,13 @@ import (
 
 // ImageGenerationRequest represents a text-to-image request
 type ImageGenerationRequest struct {
-	Model          string `json:"model"`
-	Prompt         string `json:"prompt"`
-	N              int    `json:"n,omitempty"`
-	Size           string `json:"size,omitempty"`
-	Quality        string `json:"quality,omitempty"`
-	ResponseFormat string `json:"response_format,omitempty"`
+	Model          string   `json:"model"`
+	Prompt         string   `json:"prompt"`
+	N              int      `json:"n,omitempty"`
+	Size           string   `json:"size,omitempty"`
+	Quality        string   `json:"quality,omitempty"`
+	ResponseFormat string   `json:"response_format,omitempty"`
+	Image          []string `json:"image,omitempty"`
 }
 
 // ImageEditRequest represents an image editing request
@@ -103,6 +108,19 @@ func (s *ImageService) SelectImageChannel(modelName string) (*model.Channel, err
 	return &channels[0], nil
 }
 
+// createFormFileWithMIME creates a form file part with correct MIME type based on extension.
+// Go's CreateFormFile always uses application/octet-stream which some upstream APIs reject.
+func createFormFileWithMIME(w *multipart.Writer, fieldname, filename string) (io.Writer, error) {
+	ct := mime.TypeByExtension(filepath.Ext(filename))
+	if ct == "" {
+		ct = "image/png"
+	}
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, fieldname, filename))
+	h.Set("Content-Type", ct)
+	return w.CreatePart(h)
+}
+
 // Generate creates images from text prompt using /v1/images/generations
 func (s *ImageService) Generate(channel *model.Channel, req *ImageGenerationRequest) (*ImageResponse, error) {
 	if req.ResponseFormat == "" {
@@ -117,47 +135,70 @@ func (s *ImageService) Generate(channel *model.Channel, req *ImageGenerationRequ
 	req.Size = snapSizeTo16(req.Size)
 
 	body, _ := json.Marshal(req)
+	log.Printf("[ImageService.Generate] upstream URL=%s body=%s", strings.TrimRight(channel.BaseURL, "/")+"/v1/images/generations", string(body))
 
 	url := strings.TrimRight(channel.BaseURL, "/") + "/v1/images/generations"
-	httpReq, err := http.NewRequest("POST", url, bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+channel.APIKey)
 
 	timeout := channel.Timeout
-	if timeout < 120 {
-		timeout = 120
+	if timeout < 300 {
+		timeout = 300 // 5 min minimum for large (4K) image generation
 	}
 	client := &http.Client{Timeout: time.Duration(timeout) * time.Second}
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("upstream request: %w", err)
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("upstream error %d: %s", resp.StatusCode, string(respBody))
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		httpReq, err := http.NewRequest("POST", url, bytes.NewReader(body))
+		if err != nil {
+			return nil, err
+		}
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("Authorization", "Bearer "+channel.APIKey)
+
+		resp, err := client.Do(httpReq)
+		if err != nil {
+			lastErr = fmt.Errorf("upstream request: %w", err)
+			log.Printf("[ImageService.Generate] attempt %d failed: %v", attempt, lastErr)
+			time.Sleep(time.Duration(attempt*2) * time.Second)
+			continue
+		}
+
+		if resp.StatusCode == 502 || resp.StatusCode == 503 || resp.StatusCode == 429 {
+			respBody, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			lastErr = fmt.Errorf("upstream error %d: %s", resp.StatusCode, string(respBody))
+			log.Printf("[ImageService.Generate] attempt %d got %d, retrying...", attempt, resp.StatusCode)
+			time.Sleep(time.Duration(attempt*3) * time.Second)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			respBody, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			return nil, fmt.Errorf("upstream error %d: %s", resp.StatusCode, string(respBody))
+		}
+
+		defer resp.Body.Close()
+		var result ImageResponse
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return nil, fmt.Errorf("decode response: %w", err)
+		}
+		return &result, nil
 	}
 
-	var result ImageResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("decode response: %w", err)
-	}
-
-	return &result, nil
+	return nil, lastErr
 }
 
 // Edit edits images using /v1/images/edits
 func (s *ImageService) Edit(channel *model.Channel, req *ImageEditRequest) (*ImageResponse, error) {
+	if req.N == 0 {
+		req.N = 1
+	}
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
 
-	// Add image file
+	// Add image file with correct MIME type
 	if req.Image != nil {
-		part, err := writer.CreateFormFile("image", req.ImageFilename)
+		part, err := createFormFileWithMIME(writer, "image", req.ImageFilename)
 		if err != nil {
 			return nil, err
 		}
@@ -168,7 +209,7 @@ func (s *ImageService) Edit(channel *model.Channel, req *ImageEditRequest) (*Ima
 
 	// Add mask if provided
 	if req.Mask != nil {
-		part, err := writer.CreateFormFile("mask", req.MaskFilename)
+		part, err := createFormFileWithMIME(writer, "mask", req.MaskFilename)
 		if err != nil {
 			return nil, err
 		}
@@ -190,36 +231,63 @@ func (s *ImageService) Edit(channel *model.Channel, req *ImageEditRequest) (*Ima
 	}
 	writer.Close()
 
+	bodyData := buf.Bytes()
+	contentType := writer.FormDataContentType()
+
+	log.Printf("[ImageService.Edit] upstream URL=%s model=%s size=%s prompt=%s imageFile=%s bodySize=%d maskPresent=%v n=%d",
+		strings.TrimRight(channel.BaseURL, "/")+"/v1/images/edits",
+		req.Model, snapSizeTo16(req.Size), req.Prompt[:min(80, len(req.Prompt))],
+		req.ImageFilename, len(bodyData), req.Mask != nil, req.N)
+
 	url := strings.TrimRight(channel.BaseURL, "/") + "/v1/images/edits"
-	httpReq, err := http.NewRequest("POST", url, &buf)
-	if err != nil {
-		return nil, err
-	}
-	httpReq.Header.Set("Content-Type", writer.FormDataContentType())
-	httpReq.Header.Set("Authorization", "Bearer "+channel.APIKey)
 
 	timeout := channel.Timeout
-	if timeout < 120 {
-		timeout = 120
+	if timeout < 300 {
+		timeout = 300 // 5 min minimum for large (4K) image generation
 	}
 	client := &http.Client{Timeout: time.Duration(timeout) * time.Second}
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("upstream request: %w", err)
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("upstream error %d: %s", resp.StatusCode, string(respBody))
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		httpReq, err := http.NewRequest("POST", url, bytes.NewReader(bodyData))
+		if err != nil {
+			return nil, err
+		}
+		httpReq.Header.Set("Content-Type", contentType)
+		httpReq.Header.Set("Authorization", "Bearer "+channel.APIKey)
+
+		resp, err := client.Do(httpReq)
+		if err != nil {
+			lastErr = fmt.Errorf("upstream request: %w", err)
+			log.Printf("[ImageService.Edit] attempt %d failed: %v", attempt, lastErr)
+			time.Sleep(time.Duration(attempt*2) * time.Second)
+			continue
+		}
+
+		if resp.StatusCode == 502 || resp.StatusCode == 503 || resp.StatusCode == 429 {
+			respBody, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			lastErr = fmt.Errorf("upstream error %d: %s", resp.StatusCode, string(respBody))
+			log.Printf("[ImageService.Edit] attempt %d got %d, retrying...", attempt, resp.StatusCode)
+			time.Sleep(time.Duration(attempt*3) * time.Second)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			respBody, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			return nil, fmt.Errorf("upstream error %d: %s", resp.StatusCode, string(respBody))
+		}
+
+		defer resp.Body.Close()
+		var result ImageResponse
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return nil, fmt.Errorf("decode response: %w", err)
+		}
+		return &result, nil
 	}
 
-	var result ImageResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("decode response: %w", err)
-	}
-
-	return &result, nil
+	return nil, lastErr
 }
 
 // SaveResultToStorage downloads or decodes the image and saves it to storage

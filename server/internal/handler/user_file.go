@@ -163,6 +163,7 @@ func (h *SpaceHandler) ListFiles(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "50"))
 	folderIDStr := c.Query("folder_id")
+	assetType := c.Query("asset_type")
 
 	query := h.DB.Model(&model.UserFile{}).Where("user_id = ?", userID)
 	if folderIDStr != "" {
@@ -171,6 +172,9 @@ func (h *SpaceHandler) ListFiles(c *gin.Context) {
 		} else {
 			query = query.Where("folder_id = ?", folderIDStr)
 		}
+	}
+	if assetType != "" {
+		query = query.Where("asset_type = ?", assetType)
 	}
 
 	var total int64
@@ -267,16 +271,24 @@ func (h *SpaceHandler) UploadFile(c *gin.Context) {
 		mimeType = "application/octet-stream"
 	}
 
+	// Parse asset type (default: general)
+	assetType := c.DefaultPostForm("asset_type", "general")
+	allowedTypes := map[string]bool{"general": true, "logo": true, "brand_asset": true, "reference": true}
+	if !allowedTypes[assetType] {
+		assetType = "general"
+	}
+
 	userFile := model.UserFile{
-		UserID:   userID,
-		FolderID: folderID,
-		Name:     file.Filename,
-		URL:      url,
-		Path:     path,
-		Size:     file.Size,
-		MimeType: mimeType,
-		Width:    w,
-		Height:   h2,
+		UserID:    userID,
+		FolderID:  folderID,
+		Name:      file.Filename,
+		URL:       url,
+		Path:      path,
+		Size:      file.Size,
+		MimeType:  mimeType,
+		Width:     w,
+		Height:    h2,
+		AssetType: assetType,
 	}
 	h.DB.Create(&userFile)
 

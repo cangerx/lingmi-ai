@@ -92,7 +92,7 @@ export default function RecentPage() {
             <p className="text-xs text-neutral-300 mt-1">使用 AI 工具创作后会自动记录在这里</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2.5">
             {items.map((item) => (
               <motion.div
                 key={item.id}
@@ -101,14 +101,14 @@ export default function RecentPage() {
               >
                 <div className="group relative rounded-xl overflow-hidden bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm hover:shadow-md transition-all">
                   {item.status === "failed" ? (
-                    <div className="w-full aspect-square bg-red-50 dark:bg-red-900/10 flex flex-col items-center justify-center gap-1">
+                    <div className="w-full aspect-[4/5] bg-red-50 dark:bg-red-900/10 flex flex-col items-center justify-center gap-1">
                       <AlertCircle size={20} className="text-red-300" />
                       <p className="text-[10px] text-red-400">生成失败</p>
                     </div>
                   ) : item.result_url ? (
-                    <img src={item.result_url} alt="" className="w-full aspect-square object-cover" loading="lazy" />
+                    <img src={item.result_url} alt="" className="w-full aspect-[4/5] object-cover" loading="lazy" />
                   ) : (
-                    <div className="w-full aspect-square bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center">
+                    <div className="w-full aspect-[4/5] bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center">
                       <Loader2 size={20} className="text-blue-300 animate-spin" />
                     </div>
                   )}

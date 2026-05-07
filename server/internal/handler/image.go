@@ -46,7 +46,7 @@ func (h *ImageHandler) checkPrompt(c *gin.Context, userID uint, prompt string) b
 // processImageAsync runs the AI image generation in the background and updates the Generation record
 func (h *ImageHandler) processImageAsync(genID uint, req *service.ImageGenerationRequest) {
 	go func() {
-		h.DB.Model(&model.Generation{}).Where("id = ?", genID).Updates(map[string]interface{}{
+		h.DB.Unscoped().Model(&model.Generation{}).Where("id = ?", genID).Updates(map[string]interface{}{
 			"status":     "processing",
 			"updated_at": time.Now(),
 		})
@@ -83,13 +83,13 @@ func (h *ImageHandler) processImageAsync(genID uint, req *service.ImageGeneratio
 			case "block":
 				moderationStatus = "rejected"
 				var gen model.Generation
-				if h.DB.First(&gen, genID).Error == nil {
+				if h.DB.Unscoped().First(&gen, genID).Error == nil {
 					h.Moderation.LogModeration(gen.UserID, "image", "image_gen", gen.Prompt, url, genID, nil, reason, "block")
 				}
 			case "suspect":
 				moderationStatus = "pending"
 				var gen model.Generation
-				if h.DB.First(&gen, genID).Error == nil {
+				if h.DB.Unscoped().First(&gen, genID).Error == nil {
 					h.Moderation.LogModeration(gen.UserID, "image", "image_gen", gen.Prompt, url, genID, nil, reason, "suspect")
 				}
 			default:
@@ -97,7 +97,7 @@ func (h *ImageHandler) processImageAsync(genID uint, req *service.ImageGeneratio
 			}
 		}
 
-		h.DB.Model(&model.Generation{}).Where("id = ?", genID).Updates(map[string]interface{}{
+		h.DB.Unscoped().Model(&model.Generation{}).Where("id = ?", genID).Updates(map[string]interface{}{
 			"status":            "completed",
 			"result_url":        url,
 			"moderation_status": moderationStatus,
@@ -110,7 +110,7 @@ func (h *ImageHandler) processImageAsync(genID uint, req *service.ImageGeneratio
 // processEditAsync runs the AI image edit in the background
 func (h *ImageHandler) processEditAsync(genID uint, req *service.ImageEditRequest) {
 	go func() {
-		h.DB.Model(&model.Generation{}).Where("id = ?", genID).Updates(map[string]interface{}{
+		h.DB.Unscoped().Model(&model.Generation{}).Where("id = ?", genID).Updates(map[string]interface{}{
 			"status":     "processing",
 			"updated_at": time.Now(),
 		})
@@ -151,13 +151,13 @@ func (h *ImageHandler) processEditAsync(genID uint, req *service.ImageEditReques
 			case "block":
 				moderationStatus = "rejected"
 				var gen model.Generation
-				if h.DB.First(&gen, genID).Error == nil {
+				if h.DB.Unscoped().First(&gen, genID).Error == nil {
 					h.Moderation.LogModeration(gen.UserID, "image", "image_gen", gen.Prompt, url, genID, nil, reason, "block")
 				}
 			case "suspect":
 				moderationStatus = "pending"
 				var gen model.Generation
-				if h.DB.First(&gen, genID).Error == nil {
+				if h.DB.Unscoped().First(&gen, genID).Error == nil {
 					h.Moderation.LogModeration(gen.UserID, "image", "image_gen", gen.Prompt, url, genID, nil, reason, "suspect")
 				}
 			default:
@@ -165,7 +165,7 @@ func (h *ImageHandler) processEditAsync(genID uint, req *service.ImageEditReques
 			}
 		}
 
-		h.DB.Model(&model.Generation{}).Where("id = ?", genID).Updates(map[string]interface{}{
+		h.DB.Unscoped().Model(&model.Generation{}).Where("id = ?", genID).Updates(map[string]interface{}{
 			"status":            "completed",
 			"result_url":        url,
 			"moderation_status": moderationStatus,
@@ -189,7 +189,7 @@ func (h *ImageHandler) pickDefaultImageModel() string {
 
 func (h *ImageHandler) failGeneration(genID uint, errMsg string) {
 	log.Printf("[ImageGen] task %d failed: %s", genID, errMsg)
-	h.DB.Model(&model.Generation{}).Where("id = ?", genID).Updates(map[string]interface{}{
+	h.DB.Unscoped().Model(&model.Generation{}).Where("id = ?", genID).Updates(map[string]interface{}{
 		"status":    "failed",
 		"error_msg": truncateStr(errMsg, 490),
 		"updated_at": time.Now(),
@@ -197,7 +197,7 @@ func (h *ImageHandler) failGeneration(genID uint, errMsg string) {
 
 	// Refund credits if any were deducted
 	var gen model.Generation
-	if err := h.DB.First(&gen, genID).Error; err != nil {
+	if err := h.DB.Unscoped().First(&gen, genID).Error; err != nil {
 		return
 	}
 	if gen.CreditsCost > 0 {
@@ -254,14 +254,17 @@ func truncateStr(s string, max int) string {
 	return s[:max]
 }
 
-// resolveSize maps resolution (1K/2K/4K) + ratio (1:1, 3:4, etc.) to pixel dimensions like "1024x1024".
+// resolveSize maps resolution (1K/2K/4K) + ratio (1:1, 3:4, etc.) to pixel dimensions.
+// 4K uses standard 3840x2160 base (landscape) / 2160x3840 (portrait).
 func resolveSize(resolution, ratio string) string {
+	// 4K has fixed landscape/portrait sizes; 1K/2K use scale-based approach
+	if resolution == "4K" {
+		return resolve4K(ratio)
+	}
+
 	base := 1024
-	switch resolution {
-	case "2K":
+	if resolution == "2K" {
 		base = 2048
-	case "4K":
-		base = 4096
 	}
 
 	type pair struct{ w, h int }
@@ -291,6 +294,29 @@ func resolveSize(resolution, ratio string) string {
 	if h == 0 { h = 16 }
 
 	return fmt.Sprintf("%dx%d", w, h)
+}
+
+// resolve4K returns 4K pixel sizes.
+// Upstream API max pixel area ~8.3M (3840*2160). Sizes that exceed this are
+// scaled down to fit while preserving aspect ratio. All values are multiples of 16.
+func resolve4K(ratio string) string {
+	sizes := map[string]string{
+		"16:9": "3840x2160", // 8.3M ✓
+		"9:16": "2160x3840", // 8.3M ✓
+		"3:2":  "3520x2336", // 8.2M ✓
+		"2:3":  "2336x3520", // 8.2M ✓
+		"4:3":  "3312x2480", // 8.2M ✓
+		"3:4":  "2480x3312", // 8.2M ✓
+		"1:1":  "2880x2880", // 8.3M ✓
+		"5:4":  "3200x2560", // 8.2M ✓
+		"4:5":  "2560x3200", // 8.2M ✓
+		"21:9": "3840x1648", // 6.3M ✓
+		"9:21": "1648x3840", // 6.3M ✓
+	}
+	if s, ok := sizes[ratio]; ok {
+		return s
+	}
+	return "3840x2160"
 }
 
 // ProductPhoto handles AI product photo generation
@@ -377,13 +403,16 @@ func (h *ImageHandler) Cutout(c *gin.Context) {
 		return
 	}
 
+	resolution := c.PostForm("resolution")
+	size := resolveSize(resolution, "1:1")
+
 	cost, credErr := h.deductImageCredits(userID, "gpt-image-2")
 	if credErr != nil {
 		c.JSON(http.StatusPaymentRequired, gin.H{"error": credErr.Error()})
 		return
 	}
 
-	params, _ := json.Marshal(map[string]string{"filename": file.Filename})
+	params, _ := json.Marshal(map[string]string{"filename": file.Filename, "resolution": resolution})
 
 	gen := model.Generation{
 		UserID:      userID,
@@ -409,7 +438,7 @@ func (h *ImageHandler) Cutout(c *gin.Context) {
 		Prompt:        gen.Prompt,
 		Image:         f,
 		ImageFilename: file.Filename,
-		Size:          "1024x1024",
+		Size:          size,
 	})
 
 	c.JSON(http.StatusOK, gin.H{"data": gen})
@@ -425,6 +454,8 @@ func (h *ImageHandler) Eraser(c *gin.Context) {
 	}
 
 	maskFile, _ := c.FormFile("mask")
+	resolution := c.PostForm("resolution")
+	size := resolveSize(resolution, "1:1")
 
 	prompt := c.PostForm("prompt")
 	if prompt == "" {
@@ -437,7 +468,7 @@ func (h *ImageHandler) Eraser(c *gin.Context) {
 		return
 	}
 
-	params, _ := json.Marshal(map[string]string{"filename": file.Filename})
+	params, _ := json.Marshal(map[string]string{"filename": file.Filename, "resolution": resolution})
 
 	gen := model.Generation{
 		UserID:      userID,
@@ -463,7 +494,7 @@ func (h *ImageHandler) Eraser(c *gin.Context) {
 		Prompt:        prompt,
 		Image:         f,
 		ImageFilename: file.Filename,
-		Size:          "1024x1024",
+		Size:          size,
 	}
 
 	if maskFile != nil {
@@ -489,6 +520,8 @@ func (h *ImageHandler) Expand(c *gin.Context) {
 
 	direction := c.PostForm("direction")
 	scale := c.PostForm("scale")
+	resolution := c.PostForm("resolution")
+	size := resolveSize(resolution, "1:1")
 
 	prompt := fmt.Sprintf("Expand this image outward in the %s direction by %sx, maintaining consistent style and natural extension of the scene", direction, scale)
 
@@ -498,7 +531,7 @@ func (h *ImageHandler) Expand(c *gin.Context) {
 		return
 	}
 
-	params, _ := json.Marshal(map[string]string{"filename": file.Filename, "direction": direction, "scale": scale})
+	params, _ := json.Marshal(map[string]string{"filename": file.Filename, "direction": direction, "scale": scale, "resolution": resolution})
 
 	gen := model.Generation{
 		UserID:      userID,
@@ -524,7 +557,7 @@ func (h *ImageHandler) Expand(c *gin.Context) {
 		Prompt:        prompt,
 		Image:         f,
 		ImageFilename: file.Filename,
-		Size:          "1024x1024",
+		Size:          size,
 	})
 
 	c.JSON(http.StatusOK, gin.H{"data": gen})
@@ -543,6 +576,8 @@ func (h *ImageHandler) Upscale(c *gin.Context) {
 	if scale == "" {
 		scale = "2"
 	}
+	resolution := c.PostForm("resolution")
+	size := resolveSize(resolution, "1:1")
 
 	prompt := fmt.Sprintf("Enhance and upscale this image to %sx resolution with improved details and sharpness", scale)
 
@@ -552,7 +587,7 @@ func (h *ImageHandler) Upscale(c *gin.Context) {
 		return
 	}
 
-	params, _ := json.Marshal(map[string]string{"filename": file.Filename, "scale": scale})
+	params, _ := json.Marshal(map[string]string{"filename": file.Filename, "scale": scale, "resolution": resolution})
 
 	gen := model.Generation{
 		UserID:      userID,
@@ -578,7 +613,7 @@ func (h *ImageHandler) Upscale(c *gin.Context) {
 		Prompt:        prompt,
 		Image:         f,
 		ImageFilename: file.Filename,
-		Size:          "1024x1024",
+		Size:          size,
 	})
 
 	c.JSON(http.StatusOK, gin.H{"data": gen})
@@ -653,20 +688,42 @@ func (h *ImageHandler) Poster(c *gin.Context) {
 }
 
 // Generate handles generic text-to-image generation
+// allowedRatios is the whitelist of accepted aspect ratio values.
+var allowedRatios = map[string]bool{
+	"1:1": true, "4:3": true, "3:4": true, "16:9": true, "9:16": true,
+	"3:2": true, "2:3": true, "21:9": true, "9:21": true,
+}
+
 func (h *ImageHandler) Generate(c *gin.Context) {
 	userID := c.GetUint("user_id")
 
 	var req struct {
-		Prompt     string `json:"prompt" binding:"required"`
-		Model      string `json:"model"`
-		Size       string `json:"size"`
-		N          int    `json:"n"`
-		Resolution string `json:"resolution"`
-		Ratio      string `json:"ratio"`
-		Quality    string `json:"quality"`
+		Prompt     string   `json:"prompt" binding:"required"`
+		Model      string   `json:"model"`
+		Size       string   `json:"size"`
+		N          int      `json:"n"`
+		Resolution string   `json:"resolution"`
+		Ratio      string   `json:"ratio"`
+		Quality    string   `json:"quality"`
+		ImageURLs  []string `json:"image_urls"`
+		ApplyBrand bool     `json:"apply_brand"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请输入图片描述"})
+		return
+	}
+
+	// ── Parameter validation ──
+	if len([]rune(req.Prompt)) > 2000 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "提示词不能超过2000字"})
+		return
+	}
+	if req.N < 0 || req.N > 4 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "生成数量范围为1-4"})
+		return
+	}
+	if req.Ratio != "" && !allowedRatios[req.Ratio] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "不支持的宽高比"})
 		return
 	}
 
@@ -676,10 +733,27 @@ func (h *ImageHandler) Generate(c *gin.Context) {
 			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "没有可用的图片生成渠道"})
 			return
 		}
+	} else {
+		// Validate model exists and is active
+		var mdl model.Model
+		if err := h.DB.Where("name = ? AND status = ?", req.Model, "active").First(&mdl).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "所选模型不可用"})
+			return
+		}
 	}
 	if req.N == 0 {
 		req.N = 1
 	}
+
+	// Apply brand keywords to prompt if requested (uses default brand)
+	finalPrompt := req.Prompt
+	if req.ApplyBrand {
+		var kit model.BrandKit
+		if h.DB.Where("user_id = ? AND is_default = ?", userID, true).First(&kit).Error == nil && kit.Keywords != "" {
+			finalPrompt = req.Prompt + ", " + kit.Keywords
+		}
+	}
+
 	// If resolution or ratio provided, compute pixel size; otherwise fall back to explicit size
 	if req.Resolution != "" || req.Ratio != "" {
 		req.Size = resolveSize(req.Resolution, req.Ratio)
@@ -689,7 +763,7 @@ func (h *ImageHandler) Generate(c *gin.Context) {
 	}
 
 	// Content moderation
-	if h.checkPrompt(c, userID, req.Prompt) {
+	if h.checkPrompt(c, userID, finalPrompt) {
 		return
 	}
 
@@ -700,7 +774,7 @@ func (h *ImageHandler) Generate(c *gin.Context) {
 		return
 	}
 
-	params, _ := json.Marshal(map[string]interface{}{"size": req.Size, "n": req.N, "resolution": req.Resolution, "ratio": req.Ratio, "quality": req.Quality})
+	params, _ := json.Marshal(map[string]interface{}{"size": req.Size, "n": req.N, "resolution": req.Resolution, "ratio": req.Ratio, "quality": req.Quality, "image_urls": req.ImageURLs, "apply_brand": req.ApplyBrand})
 
 	gen := model.Generation{
 		UserID:      userID,
@@ -718,12 +792,15 @@ func (h *ImageHandler) Generate(c *gin.Context) {
 		return
 	}
 
+	log.Printf("[ImageGen] task %d: model=%s resolution=%s ratio=%s size=%s quality=%s n=%d", gen.ID, req.Model, req.Resolution, req.Ratio, req.Size, req.Quality, req.N)
+
 	h.processImageAsync(gen.ID, &service.ImageGenerationRequest{
 		Model:   req.Model,
-		Prompt:  req.Prompt,
+		Prompt:  finalPrompt,
 		Size:    req.Size,
 		N:       req.N,
 		Quality: req.Quality,
+		Image:   req.ImageURLs,
 	})
 
 	c.JSON(http.StatusOK, gin.H{"data": gen})
@@ -827,9 +904,18 @@ func (h *ImageHandler) PublishToInspiration(c *gin.Context) {
 	title := req.Title
 	if title == "" {
 		title = gen.Prompt
-		if len(title) > 50 {
-			title = title[:50] + "..."
+		runes := []rune(title)
+		if len(runes) > 60 {
+			title = string(runes[:60]) + "..."
 		}
+	}
+	// Ensure title fits the DB column (200 bytes)
+	if len(title) > 190 {
+		runes := []rune(title)
+		for len(string(runes)) > 190 {
+			runes = runes[:len(runes)-1]
+		}
+		title = string(runes) + "..."
 	}
 
 	inspiration := model.Inspiration{
@@ -846,19 +932,32 @@ func (h *ImageHandler) PublishToInspiration(c *gin.Context) {
 		Status:       "pending",
 	}
 	if err := h.DB.Create(&inspiration).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "发布失败"})
+		log.Printf("[PublishInspiration] DB error for user %d, gen %d: %v", userID, req.GenerationID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "发布失败: " + err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": inspiration, "message": "已提交审核"})
 }
 
-// OptimizePrompt uses LLM to enhance a short user prompt into a detailed image generation prompt
+// OptimizePrompt uses LLM to enhance a short user prompt into a detailed image generation prompt.
+// Accepts optional context: model, style, ratio, apply_brand for better optimization.
 func (h *ImageHandler) OptimizePrompt(c *gin.Context) {
+	userID := c.GetUint("user_id")
+
 	var req struct {
-		Prompt string `json:"prompt" binding:"required"`
+		Prompt     string `json:"prompt" binding:"required"`
+		Model      string `json:"model"`
+		Style      string `json:"style"`
+		Ratio      string `json:"ratio"`
+		ApplyBrand bool   `json:"apply_brand"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请输入提示词"})
+		return
+	}
+
+	if len([]rune(req.Prompt)) > 2000 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "提示词不能超过2000字"})
 		return
 	}
 
@@ -892,6 +991,7 @@ func (h *ImageHandler) OptimizePrompt(c *gin.Context) {
 		return
 	}
 
+	// Build context-aware system prompt
 	systemPrompt := `你是一位专业的AI图片生成提示词优化专家。用户会给你一个简短的图片描述，你需要将它扩展为一段详细、专业的图片生成提示词（prompt）。
 
 规则：
@@ -900,6 +1000,31 @@ func (h *ImageHandler) OptimizePrompt(c *gin.Context) {
 3. 只输出优化后的提示词本身，不需要任何解释、前缀或标注
 4. 长度控制在 50-200 字之间
 5. 使用逗号分隔不同描述维度`
+
+	// Inject context hints
+	var contextHints []string
+	if req.Model != "" {
+		contextHints = append(contextHints, fmt.Sprintf("目标模型: %s", req.Model))
+	}
+	if req.Style != "" {
+		contextHints = append(contextHints, fmt.Sprintf("用户选择的风格: %s", req.Style))
+	}
+	if req.Ratio != "" {
+		contextHints = append(contextHints, fmt.Sprintf("画面比例: %s", req.Ratio))
+	}
+	if req.ApplyBrand && userID > 0 {
+		var kit model.BrandKit
+		if h.DB.Where("user_id = ? AND is_default = ?", userID, true).First(&kit).Error == nil && kit.Keywords != "" {
+			contextHints = append(contextHints, fmt.Sprintf("品牌关键词（请融入画面描述）: %s", kit.Keywords))
+		}
+	}
+	if len(contextHints) > 0 {
+		systemPrompt += "\n\n当前生成上下文：\n"
+		for _, hint := range contextHints {
+			systemPrompt += "- " + hint + "\n"
+		}
+		systemPrompt += "请根据以上上下文信息优化提示词，使之更贴合用户的生成目标。"
+	}
 
 	// Try each candidate model until one succeeds
 	var resp *service.ChatCompletionResponse
@@ -939,7 +1064,7 @@ func (h *ImageHandler) OptimizePrompt(c *gin.Context) {
 
 	optimized := ""
 	if len(resp.Choices) > 0 {
-		optimized = resp.Choices[0].Message.Content
+		optimized = resp.Choices[0].Message.ContentString()
 	}
 	if optimized == "" {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "未获取到优化结果"})

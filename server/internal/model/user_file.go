@@ -24,6 +24,7 @@ type UserFile struct {
 	MimeType  string    `gorm:"size:50" json:"mime_type"`
 	Width     int       `json:"width"`
 	Height    int       `json:"height"`
+	AssetType string    `gorm:"size:20;default:general;index" json:"asset_type"` // general|logo|brand_asset|reference
 	CreatedAt time.Time `json:"created_at"`
 }
 

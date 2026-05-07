@@ -14,7 +14,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
-import { modelAPI, imageAPI, generationAPI, inspirationAPI, chatAPI } from "@/lib/api";
+import { modelAPI, imageAPI, generationAPI, inspirationAPI, chatAPI, uploadAPI } from "@/lib/api";
 import { downloadImage } from "@/lib/download";
 import Footer from "@/components/footer";
 import { usePageTitle } from "@/hooks/use-page-title";
@@ -194,6 +194,10 @@ function HomeContent() {
   const [selModel, setSelModel] = useState("");
   const [showModelPicker, setShowModelPicker] = useState(false);
 
+  /* ── Reference images ── */
+  const [refImages, setRefImages] = useState<{ url: string; file?: File }[]>([]);
+  const refInputRef = useRef<HTMLInputElement>(null);
+
   /* ── Image gen modal ── */
   const [generating, setGenerating] = useState(false);
   const [showGenModal, setShowGenModal] = useState(false);
@@ -248,8 +252,8 @@ function HomeContent() {
 
   useEffect(() => {
     const q = searchParams.get("q") || searchParams.get("prompt");
-    if (q && !autoSentRef.current) { autoSentRef.current = true; setViewMode("chatting"); setTimeout(() => sendChatMessage(q), 300); }
-  }, [searchParams]);
+    if (q && selectedChatModel && !autoSentRef.current) { autoSentRef.current = true; setViewMode("chatting"); setTimeout(() => sendChatMessage(q), 300); }
+  }, [searchParams, selectedChatModel]);
 
   useEffect(() => { return () => { if (pollRef.current) clearInterval(pollRef.current); }; }, []);
   useEffect(() => { if (mode) { const d: Record<string, string> = {}; mode.params.forEach((p) => { d[p.key] = p.default; }); setParamValues(d); } }, [activeMode]);
@@ -378,7 +382,7 @@ function HomeContent() {
   const autoResize = useCallback(() => { const el = chatInputRef.current; if (el) { el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 160) + "px"; } }, []);
 
   /* ── Idle → Chat ── */
-  const handleIdleSend = useCallback(() => {
+  const handleIdleSend = useCallback(async () => {
     if (!input.trim()) return;
     const q = encodeURIComponent(input.trim());
     if (activeMode === "product") { router.push(`/product-photo?prompt=${q}`); return; }
@@ -386,13 +390,29 @@ function HomeContent() {
     if (activeMode === "image") {
       const params = new URLSearchParams({ prompt: input.trim(), auto: "1" });
       if (selModel) params.set("model", selModel);
+      // Upload reference images and collect URLs
+      if (refImages.length > 0) {
+        const urls: string[] = [];
+        for (const img of refImages) {
+          if (img.file) {
+            try {
+              const res = await uploadAPI.upload(img.file);
+              const url = res.data?.data?.url || res.data?.url;
+              if (url) urls.push(url);
+            } catch { /* skip failed uploads */ }
+          } else if (img.url) {
+            urls.push(img.url);
+          }
+        }
+        if (urls.length > 0) params.set("ref_images", urls.join(","));
+      }
       router.push(`/generate?${params.toString()}`);
       return;
     }
     // Default + copywriting: enter chat mode
     const txt = input.trim(); setViewMode("chatting");
     setTimeout(() => sendChatMessage(txt), 150);
-  }, [input, activeMode, selModel, paramValues, router, pollGeneration, sendChatMessage]);
+  }, [input, activeMode, selModel, refImages, paramValues, router, pollGeneration, sendChatMessage]);
 
   const backToIdle = () => { setViewMode("idle"); setActiveConv(null); setMessages([]); setStreamContent(""); setHistorySidebarOpen(false); setInput(""); };
 
@@ -436,6 +456,25 @@ function HomeContent() {
                   <motion.div animate={{ boxShadow: isFocused ? `0 0 0 1px ${mode?.color || "#d4d4d4"}40, 0 4px 30px ${mode?.color || "#d4d4d4"}15, 0 1px 3px rgba(0,0,0,0.04)` : "0 2px 20px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.03)" }}
                     transition={{ duration: 0.3 }} className="rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 text-left overflow-visible relative">
                     <div className="px-5 pt-4 pb-2">
+                      {/* Reference image tags */}
+                      <AnimatePresence>
+                        {activeMode === "image" && refImages.length > 0 && (
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                            className="flex flex-wrap gap-2 mb-2">
+                            {refImages.map((img, i) => (
+                              <motion.span key={i} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
+                                className="inline-flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200/60 dark:border-neutral-700/60">
+                                <img src={img.url} alt={`参考图${i + 1}`} className="w-6 h-6 rounded object-cover" />
+                                <span className="text-xs text-neutral-600 dark:text-neutral-300">参考图{i + 1}</span>
+                                <button onClick={() => setRefImages((p) => p.filter((_, j) => j !== i))}
+                                  className="p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors">
+                                  <X size={10} className="text-neutral-400" />
+                                </button>
+                              </motion.span>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                       <div className="flex items-start gap-2">
                         <AnimatePresence>
                           {mode && (
@@ -532,7 +571,17 @@ function HomeContent() {
                           />
                         )}
                       </motion.button>
-                      <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.96 }} className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-100/80 transition-colors"><Paperclip size={14} /></motion.button>
+                      <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.96 }}
+                        onClick={() => { if (activeMode === "image") refInputRef.current?.click(); }}
+                        className={cn("p-1.5 rounded-lg transition-colors", activeMode === "image" ? "text-neutral-500 hover:bg-neutral-100/80 dark:hover:bg-neutral-800/80" : "text-neutral-300 cursor-default")}
+                        title={activeMode === "image" ? "上传参考图" : ""}><Paperclip size={14} /></motion.button>
+                      <input ref={refInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
+                        const files = e.target.files;
+                        if (!files) return;
+                        const newImgs = Array.from(files).slice(0, 4 - refImages.length).map((f) => ({ url: URL.createObjectURL(f), file: f }));
+                        setRefImages((prev) => [...prev, ...newImgs].slice(0, 4));
+                        e.target.value = "";
+                      }} />
                       <div className="flex-1" />
                       <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.96 }} onClick={() => { setViewMode("chatting"); setHistorySidebarOpen(true); }}
                         className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-100/80 transition-colors mr-1" title="对话历史"><Clock size={14} /></motion.button>
@@ -611,7 +660,7 @@ function HomeContent() {
                       <div className="flex items-center gap-3"><h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">精选灵感</h2><p className="text-xs text-neutral-400">来自社区的优秀 AI 创作</p></div>
                       <Link href="/inspiration" className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors flex items-center gap-1">查看更多 <ArrowRight size={12} /></Link>
                     </div>
-                    <motion.div variants={stagger} initial="hidden" animate="visible" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                    <motion.div variants={stagger} initial="hidden" animate="visible" className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
                       {(() => {
                         const real = showcaseData.slice(0, 12);
                         const padCount = Math.max(0, 12 - real.length);
@@ -625,7 +674,7 @@ function HomeContent() {
                             <motion.div key={item.id ?? `ph-${i}`} variants={fadeUp}>
                               <Link href={cardHref} className="group block rounded-2xl overflow-hidden border border-white/60 shadow-sm hover:shadow-lg transition-all duration-300 relative">
                                 {item.image_url ? (
-                                  <div className="aspect-[3/4] relative overflow-hidden bg-neutral-100">
+                                  <div className="aspect-[4/5] relative overflow-hidden bg-neutral-100">
                                     <img src={item.image_url} alt={item.title || ""} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                     <div className="absolute bottom-0 left-0 right-0 p-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -640,7 +689,7 @@ function HomeContent() {
                                       </div>
                                     )}
                                   </div>
-                                ) : (<div className={cn("aspect-[3/4] bg-gradient-to-br rounded-2xl", item.gradient)} />)}
+                                ) : (<div className={cn("aspect-[4/5] bg-gradient-to-br rounded-2xl", item.gradient)} />)}
                               </Link>
                             </motion.div>
                           );

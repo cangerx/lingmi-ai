@@ -14,6 +14,7 @@ interface UsePollGenerationReturn {
   error: string | null;
   startPolling: (genId: number) => void;
   stopPolling: () => void;
+  reset: () => void;
 }
 
 export function usePollGeneration(intervalMs = 3000): UsePollGenerationReturn {
@@ -66,5 +67,11 @@ export function usePollGeneration(intervalMs = 3000): UsePollGenerationReturn {
     };
   }, []);
 
-  return { result, polling, error, startPolling, stopPolling };
+  const reset = useCallback(() => {
+    stopPolling();
+    setResult(null);
+    setError(null);
+  }, [stopPolling]);
+
+  return { result, polling, error, startPolling, stopPolling, reset };
 }

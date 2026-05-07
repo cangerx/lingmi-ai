@@ -20,7 +20,8 @@ func (h *AdminGenerationHandler) List(c *gin.Context) {
 	status := c.Query("status")
 	userID := c.Query("user_id")
 
-	query := h.DB.Model(&model.Generation{})
+	// Unscoped: admin can see soft-deleted records
+	query := h.DB.Unscoped().Model(&model.Generation{})
 	if genType != "" {
 		query = query.Where("type = ?", genType)
 	}
@@ -76,7 +77,7 @@ func (h *AdminGenerationHandler) List(c *gin.Context) {
 func (h *AdminGenerationHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 	var gen model.Generation
-	if err := h.DB.First(&gen, id).Error; err != nil {
+	if err := h.DB.Unscoped().First(&gen, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "generation not found"})
 		return
 	}

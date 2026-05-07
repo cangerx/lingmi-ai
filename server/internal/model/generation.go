@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Generation struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
@@ -14,6 +18,7 @@ type Generation struct {
 	CreditsCost float64   `json:"credits_cost"`
 	ErrorMsg         string    `gorm:"size:500" json:"error_msg"`
 	ModerationStatus string    `gorm:"size:20;default:skipped" json:"moderation_status"` // skipped, pending, approved, rejected
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	CreatedAt        time.Time      `json:"created_at"`
+	UpdatedAt        time.Time      `json:"updated_at"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
